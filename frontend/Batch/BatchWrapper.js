@@ -4,7 +4,8 @@ import queryString from 'query-string';
 import { React, connect, elements, axios, PropTypes, createHashHistory, ComponentManager, ExportableGrid, GridManager, Modal, Loading } from 'perun-core'
 import Statistics from '../Statistics/Statistics'
 import { iconManager } from '../assets/svgHolder'
-const { Dropdown, InputElement, alertUserV2, alertUserResponse } = elements
+const { Dropdown, InputElement, alertUserV2, alertUserResponse, ReactBootstrap } = elements
+const { Modal: ReactBootstrapModal } = ReactBootstrap
 
 const initialState = {
   process: '',
@@ -1030,7 +1031,7 @@ class BatchWrapper extends React.Component {
   }
 
   render() {
-    const { showButton, cadLocationGridModal, processWithErr, process, num, comment, batchJson, batchJsonTemp, batchtemplate, alert, showJson, showTemplate, showTablePreview, showTable, showFormProcess, selectedApps, showDownloadZipBtn, showActionsBtn, showReport, showDeleteModal, showStatsHtml, showStatsState, loading, batchName, startJob, stopJob, displayBatchJobParamModal } = this.state
+    const { showButton, cadLocationGridModal, processWithErr, process, num, comment, batchJson, batchJsonTemp, batchtemplate, showJson, showTemplate, showTablePreview, showTable, showFormProcess, selectedApps, showDownloadZipBtn, showActionsBtn, showReport, showDeleteModal, showStatsHtml, showStatsState, loading, batchName, startJob, stopJob, displayBatchJobParamModal } = this.state
     return (
       <React.Fragment>
         {loading}
@@ -1041,7 +1042,6 @@ class BatchWrapper extends React.Component {
           <div className='batch-flex-parent'>
             <div className='batch-flex-form-child'>
               <div className='batch-form-container animation-top batch-flex-column' id='custom-form'>
-                {alert}
                 {showActionsBtn}
                 {showReport}
                 {batchJson}
@@ -1064,19 +1064,27 @@ class BatchWrapper extends React.Component {
               </div>}
               {showDownloadZipBtn && <button title={this.context.intl.formatMessage({ id: 'perun.batch.download_log', defaultMessage: 'perun.batch.download_log' })} onClick={this.downloadZip} className='batch-button button-home custom-form-elements'>{iconManager.getIcon('download')} {this.context.intl.formatMessage({ id: 'perun.batch.system_preview', defaultMessage: 'perun.batch.system_preview' })}</button>}
             </div>
+            {showJson && (
+              <ReactBootstrapModal className={"farm-registry-modal"} show={showJson} onHide={() => this.setState({ showJson: false })}>
+                <ReactBootstrapModal.Header className={"farm-registry-modal-header"} closeButton>
+                  <ReactBootstrapModal.Title>{this.context.intl.formatMessage({ id: 'perun.batch.create_new_process', defaultMessage: 'perun.batch.create_new_process' })}</ReactBootstrapModal.Title>
+                </ReactBootstrapModal.Header>
+                <ReactBootstrapModal.Body className={"farm-registry-modal-body"}>
+                  <div className='flex-table-child batch-form-container animation-top' id='custom-form'>
+                    <p>{this.context.intl.formatMessage({ id: 'perun.batch.create_new_process', defaultMessage: 'perun.batch.create_new_process' })}</p>
+                    <InputElement name='process' value={process} placeholder={this.context.intl.formatMessage({ id: 'perun.batch.process_name', defaultMessage: 'perun.batch.process_name' })} label='process' type='input' onChange={this.onChange} id='process' />
+                    <InputElement name='num' value={num} placeholder={this.context.intl.formatMessage({ id: 'perun.batch.number_threads', defaultMessage: 'perun.batch.number_threads' })} label='num' type='number' onChange={this.onChange} id='num' />
+                    <textarea className='custom-form-elements custom-textarea' name='comment' value={comment} id='comment' rows='4' placeholder={this.context.intl.formatMessage({ id: 'perun.batch.notes', defaultMessage: 'perun.batch.notes' })} onChange={this.onChange} />
+                    <div className='button-container'>
+                      <button className='batch-button-default' id='reset-btn' onClick={this.onReset}>{this.context.intl.formatMessage({ id: 'perun.batch.reset', defaultMessage: 'perun.batch.reset' })}</button>
+                      <button className='batch-button-default' id='save-btn' type='submit' onClick={this.createJsonBatchAfsardTmp}>{this.context.intl.formatMessage({ id: 'perun.batch.create_process', defaultMessage: 'perun.batch.create_process' })}</button>
+                    </div>
+                  </div>
+                </ReactBootstrapModal.Body>
+                <ReactBootstrapModal.Footer className={"farm-registry-modal-footer"} />
+              </ReactBootstrapModal>
+            )}
             {/***** righ side of the main screen *****/}
-            {showJson && <div className='flex-table-child batch-form-container animation-top' id='custom-form'><p>{this.context.intl.formatMessage({ id: 'perun.batch.create_new_process', defaultMessage: 'perun.batch.create_new_process' })}</p>
-              <InputElement name='process' value={process} placeholder={this.context.intl.formatMessage({ id: 'perun.batch.process_name', defaultMessage: 'perun.batch.process_name' })} label='process' type='input' onChange={this.onChange} id='process'
-              // error={'Полето е задолжително'}
-              />
-              <InputElement name='num' value={num} placeholder={this.context.intl.formatMessage({ id: 'perun.batch.number_threads', defaultMessage: 'perun.batch.number_threads' })} label='num' type='number' onChange={this.onChange} id='num'
-              // error={'Полето е задолжително'}
-              />
-              <textarea className='custom-form-elements custom-textarea' name='comment' value={comment} id='comment' rows='4' placeholder={this.context.intl.formatMessage({ id: 'perun.batch.notes', defaultMessage: 'perun.batch.notes' })} onChange={this.onChange} />
-              <div className='button-container'>
-                <button className='button button-reset custom-form-elements' id='reset-btn' onClick={this.onReset}>{this.context.intl.formatMessage({ id: 'perun.batch.reset', defaultMessage: 'perun.batch.reset' })}</button>
-                <button className='button button-create custom-form-elements' id='save-btn' type='submit' onClick={this.createJsonBatchAfsardTmp}>{this.context.intl.formatMessage({ id: 'perun.batch.create_process', defaultMessage: 'perun.batch.create_process' })}</button>
-              </div></div>}
             {showTemplate && <div className='batch-form-container flex-table-child animation-top'>{this.context.intl.formatMessage({ id: 'perun.batch.fill_form', defaultMessage: 'perun.batch.fill_form' })} {batchtemplate}</div>}
             {showTable && <div className='flex-table-child'>{showTablePreview}</div>}
           </div>
