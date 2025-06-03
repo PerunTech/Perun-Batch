@@ -500,7 +500,7 @@ class BatchWrapper extends React.Component {
     }
     axios({
       method: 'post',
-      data: batch_params,
+      data: JSON.stringify(batch_params),
       url: restUrl + component.props.svSession,
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
     }).then(function (response) {
@@ -543,7 +543,7 @@ class BatchWrapper extends React.Component {
     const restUrl = config.svConfig.restSvcBaseUrl + config.svConfig.triglavRestVerbs[jobParams]
     axios({
       method: 'post',
-      data: batch_params,
+      data: JSON.stringify(batch_params),
       url: restUrl + this.props.svSession,
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
     }).then(function (response) {
@@ -572,7 +572,7 @@ class BatchWrapper extends React.Component {
     }
     axios({
       method: 'post',
-      data: batch_params,
+      data: JSON.stringify(batch_params),
       url: restUrl,
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
     }).then(function (response) {
@@ -605,7 +605,7 @@ class BatchWrapper extends React.Component {
     if (component.state.num && component.state.process) {
       axios({
         method: 'post',
-        data: batch_params,
+        data: JSON.stringify(batch_params),
         url: restUrl + component.props.svSession,
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
       }).then(function (response) {
@@ -842,7 +842,7 @@ class BatchWrapper extends React.Component {
 
     axios({
       method: 'post',
-      data: batch_params,
+      data: JSON.stringify(batch_params),
       url: restUrl + this.props.svSession,
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
     }).then(function () {
@@ -927,7 +927,7 @@ class BatchWrapper extends React.Component {
     th1s.setState({ loading: <Loading /> })
     axios({
       method: 'post',
-      data: batch_payment,
+      data: JSON.stringify(batch_payment),
       url: restUrl + this.props.svSession,
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
     }).then(function (response) {
@@ -956,7 +956,7 @@ class BatchWrapper extends React.Component {
     let delete_payment = { "jobId": th1s.state.jobId, "files": th1s.state.delete }
     axios({
       method: 'post',
-      data: delete_payment,
+      data: JSON.stringify(delete_payment),
       url: restUrl + this.props.svSession,
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
     }).then(function (response) {
