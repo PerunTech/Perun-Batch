@@ -1,6 +1,5 @@
 export const svConfig = {
   restSvcBaseUrl: window.server,
-  isDebug: process.env.NODE_ENV !== 'production',
   triglavRestVerbs: {
     MAIN_LABELS: '/SvSecurity/i18n/%s1/%s2',
     GET_COMPONENT_CONFIGURATION: '/SvSecurity/configuration/getConfiguration/%session/%componentName',

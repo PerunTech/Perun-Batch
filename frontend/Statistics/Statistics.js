@@ -1,4 +1,4 @@
-import { React, connect, GridManager, ComponentManager } from 'perun-core'
+import { React } from 'perun-core'
 
 class Statistics extends React.Component {
   constructor(props) {

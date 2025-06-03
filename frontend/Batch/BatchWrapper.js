@@ -1,12 +1,10 @@
 import * as config from '../config/config'
 import SearchResults from './SearchResults'
 import queryString from 'query-string';
-import { React, connect, redux, elements, axios, PropTypes, createHashHistory, ComponentManager, ExportableGrid, GridManager, Modal, Loading } from 'perun-core'
+import { React, connect, elements, axios, PropTypes, createHashHistory, ComponentManager, ExportableGrid, GridManager, Modal, Loading } from 'perun-core'
 import Statistics from '../Statistics/Statistics'
 import { iconManager } from '../assets/svgHolder'
-
-const { Dropdown, InputElement, alertUser } = elements
-// const {Modal} = components
+const { Dropdown, InputElement, alertUserV2, alertUserResponse } = elements
 
 const initialState = {
   process: '',
@@ -25,7 +23,6 @@ class BatchWrapper extends React.Component {
       showStop: false,
       batchJsonTemp: '',
       appTypes: '',
-      alert: undefined,
       batchtemplate: '',
       jobId: '',
       selectedApps: 0,
@@ -52,7 +49,6 @@ class BatchWrapper extends React.Component {
     this.stopJob = this.stopJob.bind(this)
     this.createJsonBatchAfsardTmp = this.createJsonBatchAfsardTmp.bind(this)
     this.getJobTemp = this.getJobTemp.bind(this)
-    this.logout = this.logout.bind(this)
     this.inputParams = this.inputParams.bind(this)
     this.inputAndSearch = this.inputAndSearch.bind(this)
     this.showSearchResult = this.showSearchResult.bind(this)
@@ -63,8 +59,6 @@ class BatchWrapper extends React.Component {
     this.closeModal = this.closeModal.bind(this)
     this.saveSelectedIdbr = this.saveSelectedIdbr.bind(this)
     this.iterateBatchDataTemplate = this.iterateBatchDataTemplate.bind(this)
-    // this.updateUrl = this.updateUrl.bind(this)
-    // this.readUrlState = this.readUrlState.bind(this)
     this.getActions = this.getActions.bind(this)
     this.iterateActions = this.iterateActions.bind(this)
     this.generatePayment = this.generatePayment.bind(this)
@@ -81,21 +75,11 @@ class BatchWrapper extends React.Component {
     this.showDisplayBatchJobParamModal = this.showDisplayBatchJobParamModal.bind(this)
     this.startProcess = this.startProcess.bind(this)
     this.closeDisplayBatchJobParamModal = this.closeDisplayBatchJobParamModal.bind(this)
-
     this.displayCadLocationGridModal = this.displayCadLocationGridModal.bind(this)
     this.closeCadLocationGridModal = this.closeCadLocationGridModal.bind(this)
     this.onCadLocationRowClick = this.onCadLocationRowClick.bind(this)
   }
 
-  // componentWillReceiveProps (nextProps) {
-  //   debugger;
-  //   if (this.props.location.search !== nextProps.location.search) {
-  //     this.setState({batchJson: '', batchJsonTemp: '', showButton: ''})
-  //     this.readUrlState(nextProps.location.search);
-  //   }
-  // }
-
-  /* get all jobObjectTypes f.r */
   componentDidMount() {
     this.readUrlState(this.props.location.search);
     this.getJobType();
@@ -143,26 +127,21 @@ class BatchWrapper extends React.Component {
   }
 
   getJobType(batch_type) {
-    let type
     const url = config.svConfig.restSvcBaseUrl + config.svConfig.triglavRestVerbs.GET_BATCH_TYPE + this.props.svSession
-    axios.get(url)
-      .then((response) => {
-        if (response.data && Array.isArray(response.data) && response.data.length > 0) {
-          this.iterateBatchDataTemplate(response.data, this.context.intl.formatMessage({
-            id: 'perun.batch.choose_process_type', defaultMessage: 'perun.batch.choose_process_type'
-          }), 1, '', batch_type)
-        } else {
-          if (response.data?.type === 'ERROR') {
-            alertUser(true, 'error', response.data?.title || '', response.data?.message || '')
-          }
+    axios.get(url).then((response) => {
+      if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+        this.iterateBatchDataTemplate(response.data, this.context.intl.formatMessage({
+          id: 'perun.batch.choose_process_type', defaultMessage: 'perun.batch.choose_process_type'
+        }), 1, '', batch_type)
+      } else {
+        if (response.data?.type === 'ERROR') {
+          alertUserResponse({ response: response.data })
         }
-      })
-      .catch((response) => {
-        // this.logout(response)
-        type = response.response.data.type
-        type = type.toLowerCase()
-        this.setState({ alert: alertUser(true, type, response.response.data.message) })
-      })
+      }
+    }).catch((err) => {
+      console.error(err)
+      alertUserResponse({ response: err })
+    })
   }
 
   /* check status of valid process and decide witch form/step to display */
@@ -257,68 +236,55 @@ class BatchWrapper extends React.Component {
   }
 
   getJobTemplate(templateId) {
-    let type
     const component = this
     const url = config.svConfig.restSvcBaseUrl + config.svConfig.triglavRestVerbs.GET_PARAMS_TEMPLATES + component.props.svSession + '/' + templateId
-    axios.get(url)
-      .then((response) => {
-        if (response.data.data.length > 0) {
-          response.data.data.forEach(template => {
-            if (template.name === 'Ид на модул') {
-              component.getAppTypes(response.data)
-            } else if (template.type === 'dropdown') {
-              component.getCodeList(template.code_list, response.data)
-            } else {
-              component.createJsonTemp(response.data)
-            }
-          })
-        } else {
-          component.selectObjects()
-        }
-      })
-      .catch((response) => {
-        // component.logout(response)
-        type = response.response.data.type
-        type = type.toLowerCase()
-        component.setState({ alert: alertUser(true, type, response.response.data.message) })
-      })
+    axios.get(url).then((response) => {
+      if (response.data.data.length > 0) {
+        response.data.data.forEach(template => {
+          if (template.name === 'Ид на модул') {
+            component.getAppTypes(response.data)
+          } else if (template.type === 'dropdown') {
+            component.getCodeList(template.code_list, response.data)
+          } else {
+            component.createJsonTemp(response.data)
+          }
+        })
+      } else {
+        component.selectObjects()
+      }
+    }).catch((err) => {
+      console.error(err)
+      alertUserResponse({ response: err })
+    })
   }
 
   getAppTypes(dataTmp) {
     this.setState({ loading: <Loading /> })
-    let type
     let component = this
     const url = config.svConfig.restSvcBaseUrl + config.svConfig.triglavRestVerbs.GET_DROP_DOWN_VALUES + component.props.svSession + '/APPLICATION_TYPE/REGIONAL_OFFICE/2019'
-    axios.get(url)
-      .then((response) => {
-        if (response.data) {
-          component.setState({ loading: false }, () => component.createJsonTemp(dataTmp, response.data))
-        }
-      })
-      .catch((response) => {
-        // component.logout(response)
-        component.setState({ loading: false })
-        type = response.response.data.type
-        type = type.toLowerCase()
-        component.setState({ alert: alertUser(true, type, response.response.data.message) })
-      })
+    axios.get(url).then((response) => {
+      if (response.data) {
+        component.setState({ loading: false }, () => component.createJsonTemp(dataTmp, response.data))
+      }
+    }).catch((err) => {
+      console.error(err)
+      this.setState({ loading: false })
+      alertUserResponse({ response: err })
+    })
   }
+
   getCodeList(codeListType, dataTmp) {
     const url = config.svConfig.restSvcBaseUrl + '/Iacs/getCodeList/' + this.props.svSession + `/${codeListType}`
     this.setState({ loading: <Loading /> })
     let component = this
-    let type
     axios.get(url).then(res => {
       if (res.data) {
         this.setState({ loading: false, [codeListType]: res.data }, () => component.createJsonTemp(dataTmp))
       }
     }).catch(err => {
-      this.setState({ loading: false })
-      if (err.response.data) {
-        type = err.response.data.type
-        type = type.toLowerCase()
-        alertUser(true, type, err.response.data.message)
-      }
+      console.error(err)
+      component.setState({ loading: false })
+      alertUserResponse({ response: err })
     })
   }
 
@@ -421,7 +387,7 @@ class BatchWrapper extends React.Component {
             configHtmlBuffer.push(dropdownOrgUnit)
           } else {
             if (jobParams[i].type === 'ATTACHMENT') {
-              htmlElementTemplate = <div className='import-holder'><label id='uploadLabel' className='upload-label'>{this.context.intl.formatMessage({ id: 'perun.batch.file_name', defaultMessage: 'perun.batch.file_name' })}</label><label className='custom-label' for='attachment' >{iconManager.getIcon('upload_file')} {this.context.intl.formatMessage({ id: 'perun.batch.upload_file', defaultMessage: 'perun.batch.upload_file' })}</label>
+              htmlElementTemplate = <div className='import-holder'><label id='uploadLabel' className='upload-label'>{this.context.intl.formatMessage({ id: 'perun.batch.file_name', defaultMessage: 'perun.batch.file_name' })}</label><label className='custom-label' htmlFor='attachment' >{iconManager.getIcon('upload_file')} {this.context.intl.formatMessage({ id: 'perun.batch.upload_file', defaultMessage: 'perun.batch.upload_file' })}</label>
                 <input className='custom-form-elements' type={fieldType} id={jobParams[i].id} name={jobParams[i].name} placeholder={jobParams[i].name}
                   onChange={(e) => this.inputParams(e, 'getUploadName')} required={required} /></div>
               configHtmlBuffer.push(htmlElementTemplate)
@@ -467,7 +433,7 @@ class BatchWrapper extends React.Component {
       }
     }
 
-    // return boolean if the fn parameter returns the matching condition, AS
+    // return boolean if the fn parameter returns the matching condition
     function isFalse(fieldId) {
       return fieldId === 'false'
     }
@@ -476,16 +442,15 @@ class BatchWrapper extends React.Component {
     // manipulated depending on the values in input params func
     let result = checkArr.every(isFalse)
 
-    // if the matchin result is true proceed with axios, else return alert, AS
+    // if the matchin result is true proceed with axios, else return alert
     if (result === true) {
-      let type
       const component = this
       const restUrl = config.svConfig.restSvcBaseUrl + config.svConfig.triglavRestVerbs.SAVE_BATCH_PARAMS
       let batch_params = component.state
 
       const data = new FormData() // eslint-disable-line
 
-      /* if in state attachment add key for uploaded file f.r */
+      /* if in state attachment add key for uploaded file */
       if (batch_params.attachment) {
         let file = component.state.attachment
         data.append(file.name, file)
@@ -499,30 +464,34 @@ class BatchWrapper extends React.Component {
         url: restUrl + this.props.svSession,
         headers: { 'Content-Type': 'multipart/form-data' }
       }).then(function (response) {
-        component.setState({ alert: alertUser(true, response.data.type.toLowerCase(), response.data.message), showTemplate: false })
+        component.setState({ showTemplate: false })
+        alertUserResponse({ response: response?.data })
         if (batch_params.attachment) {
           component.setState({ attachment: undefined })
         }
         if (response.data.type === 'SUCCESS') {
           component.selectObjects()
         }
+      }).catch(function (err) {
+        console.error(err)
+        alertUserResponse({ response: err })
       })
-        .catch(function (response) {
-          // component.logout(response)
-          type = response.response.data.type
-          type = type.toLowerCase()
-          component.setState({ alert: alertUser(true, type, response.response.data.message) })
-        })
     } else {
-      this.setState({ alert: alertUser(true, 'info', this.context.intl.formatMessage({ id: 'perun.batch.fill_in_the_form', defaultMessage: 'perun.batch.fill_in_the_form' })) })
+      alertUserV2({
+        type: 'info',
+        title: this.context.intl.formatMessage({ id: 'perun.batch.fill_in_the_form', defaultMessage: 'perun.batch.fill_in_the_form' }),
+      })
     }
   }
 
-  /* run selection f.r */
+  /* run selection */
   selectObjects() {
-    let type
     const component = this
-    component.setState({ alert: alertUser(true, 'success', this.context.intl.formatMessage({ id: 'perun.batch.selection_started_please_wait', defaultMessage: 'perun.batch.selection_started_please_wait' })), loading: <Loading /> })
+    alertUserV2({
+      type: 'success',
+      title: this.context.intl.formatMessage({ id: 'perun.batch.selection_started_please_wait', defaultMessage: 'perun.batch.selection_started_please_wait' }),
+    })
+    component.setState({ loading: <Loading /> })
     const restUrl = config.svConfig.restSvcBaseUrl + config.svConfig.triglavRestVerbs.SELECTION_JOB
     let batch_params
     if (component.state.jobId) {
@@ -534,45 +503,38 @@ class BatchWrapper extends React.Component {
       url: restUrl + component.props.svSession,
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
     }).then(function (response) {
-      if (response.data) {
-        type = response.data.type
-        type = type.toLowerCase()
-        component.setState({ alert: alertUser(true, type, response.data.message, null, component.closeLoading()), showFormProcess: true, startJob: true, stopJob: false, selectedApps: response.data.data.numSelectedApps })
+      if (response?.data) {
+        alertUserResponse({ response: response.data, onConfirm: () => component.closeLoading() })
+        component.setState({ showFormProcess: true, startJob: true, stopJob: false, selectedApps: response.data.data.numSelectedApps })
         let showTablePreview = <SearchResults key={'SVAROG_BATCH_JOB_' + component.state.batch_type + component.state.templateId} templateId={component.state.templateId} batch_type={component.state.batch_type} getRowId={component.getRowId} batchJobParamDisplay={component.batchJobParamDisplay} />
         component.setState({ showTablePreview: showTablePreview, showTable: true });
       }
+    }).catch(function (err) {
+      console.error(err)
+      alertUserResponse({ response: err, onConfirm: () => component.closeLoading() })
     })
-      .catch(function (response) {
-        // component.logout(response)
-        type = response.response.data.type
-        type = type.toLowerCase()
-        component.setState({ alert: alertUser(true, type, response.response.data.message, null, component.closeLoading()) })
-      })
   }
 
   runJobSelection(jobParams) {
     if (jobParams === 'RERUN_JOB') {
-      alertUser(true, 'info',
-        this.context.intl.formatMessage({ id: 'perun.batch.rerun_job_confirmation', defaultMessage: 'perun.batch.rerun_job_confirmation' }),
-        '',
-        () => {
-          this.startProcess(jobParams)
-        }, null, true,
-        this.context.intl.formatMessage({ id: 'perun.batch.confirm', defaultMessage: 'perun.batch.confirm' }),
-        this.context.intl.formatMessage({ id: 'perun.batch.cancel', defaultMessage: 'perun.batch.cancel' })
-      )
+      alertUserV2({
+        type: 'info',
+        title: this.context.intl.formatMessage({ id: 'perun.batch.rerun_job_confirmation', defaultMessage: 'perun.batch.rerun_job_confirmation' }),
+        confirmButtonText: this.context.intl.formatMessage({ id: 'perun.batch.confirm', defaultMessage: 'perun.batch.confirm' }),
+        onConfirm: () => this.startProcess(jobParams),
+        showCancel: true,
+        cancelButtonText: this.context.intl.formatMessage({ id: 'perun.batch.cancel', defaultMessage: 'perun.batch.cancel' }),
+      })
     } else {
       this.startProcess(jobParams)
     }
   }
 
-
   startProcess(jobParams) {
     const component = this
-    let type
     const firstLabel = this.context.intl.formatMessage({ id: 'perun.batch.processing_started', defaultMessage: 'perun.batch.processing_started' })
     const secondLabel = this.context.intl.formatMessage({ id: 'perun.batch.please_wait', defaultMessage: 'perun.batch.please_wait' })
-    component.setState({ alert: alertUser(true, 'info', `${firstLabel} - ` + component.state.jobId + `  ${secondLabel}`) })
+    alertUserV2({ type: 'info', title: `${firstLabel} - ` + component.state.jobId + `  ${secondLabel}` })
     let batch_params
     if (component.state.jobId) {
       batch_params = { "jobId": component.state.jobId }
@@ -584,31 +546,26 @@ class BatchWrapper extends React.Component {
       url: restUrl + this.props.svSession,
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
     }).then(function (response) {
-      /* if job starts processing successfully, reload grid and show statistics f.r */
-      if (response.data) {
-        type = response.data.type
-        type = type.toLowerCase()
-        component.setState({ alert: alertUser(true, type, response.data.message), showFormProcess: true, startJob: false, stopJob: true })
+      /* if job starts processing successfully, reload grid and show statistics */
+      if (response?.data) {
+        alertUserResponse({ response: response.data })
+        component.setState({ showFormProcess: true, startJob: false, stopJob: true })
         GridManager.reloadGridData('SVAROG_BATCH_JOB' + '_' + component.state.batch_type + component.state.templateId)
         /* set interval and show statistics of the running process f.r */
         component.showActiveProcessStats(component.state.jobId, component.interval = setInterval(
           () => component.showActiveProcessStats(component.state.jobId)
           , 7400))
       }
+    }).catch(function (err) {
+      console.error(err)
+      alertUserResponse({ response: err })
     })
-      .catch(function (response) {
-        // component.logout(response)
-        type = response.response.data.type
-        type = type.toLowerCase()
-        component.setState({ alert: alertUser(true, type, response.response.data.message) })
-      })
   }
 
   stopJob() {
     const component = this
     const restUrl = config.svConfig.restSvcBaseUrl + config.svConfig.triglavRestVerbs.STOP_JOB
     let batch_params
-    let type
     if (component.state.jobId) {
       batch_params = { "jobId": component.state.jobId }
     }
@@ -618,26 +575,21 @@ class BatchWrapper extends React.Component {
       url: restUrl,
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
     }).then(function (response) {
-      if (response.data) {
-        type = response.data.type
-        type = type.toLowerCase()
-        component.setState({ alert: alertUser(true, type, response.data.message), showFormProcess: true, startJob: true, stopJob: false })
+      if (response?.data) {
+        alertUserResponse({ response: response.data })
+        component.setState({ showFormProcess: true, startJob: true, stopJob: false })
         clearInterval(component.interval)
         GridManager.reloadGridData('SVAROG_BATCH_JOB' + '_' + component.state.batch_type + component.state.templateId)
       }
+    }).catch(function (err) {
+      console.error(err)
+      alertUserResponse({ response: err })
     })
-      .catch(function (response) {
-        // component.logout(response)
-        type = response.response.data.type
-        type = type.toLowerCase()
-        component.setState({ alert: alertUser(true, type, response.response.data.message) })
-      })
   }
 
-  /* create job tmp for the selected job type f.r */
+  /* create job tmp for the selected job type */
   createJsonBatchAfsardTmp(processName, processNumber, processNote, batch_type, templateId) {
     let batch_params
-    let type
     let tmpId
     const component = this
     const restUrl = config.svConfig.restSvcBaseUrl + config.svConfig.triglavRestVerbs.SAVE_JOB_TYPE
@@ -656,37 +608,31 @@ class BatchWrapper extends React.Component {
         url: restUrl + component.props.svSession,
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
       }).then(function (response) {
-        if (response.data) {
-          if (response.data.type.toLowerCase() === 'success') {
+        if (response?.data) {
+          const resType = response.data?.type?.toLowerCase()
+          alertUserResponse({ response: response.data })
+          if (resType === 'success') {
             GridManager.reloadGridData('SVAROG_BATCH_JOB' + '_' + component.state.batch_type + component.state.templateId)
             component.getJobTemplate(tmpId)
-            component.setState({ alert: alertUser(true, response.data.type.toLowerCase(), response.data.message) })
             component.setState({ jobId: response.data.data.jobId, showJson: false })
-          } else if (response.data.type.toLowerCase() === 'error') {
-            component.setState({ alert: alertUser(true, response.data.type.toLowerCase(), response.data.message) })
           }
           component.setState(initialState)
         }
+      }).catch(function (err) {
+        console.error(err)
+        alertUserResponse({ response: err })
+        component.setState(initialState)
       })
-        .catch(function (response) {
-          // component.logout(response)
-          type = response.response.data.type
-          type = type.toLowerCase()
-          component.setState({ alert: alertUser(true, type, response.response.data.message) })
-          component.setState(initialState)
-        })
     } else {
-      component.setState({
-        alert: alertUser(true, 'info', this.context.intl.formatMessage({ id: 'perun.batch.fill_in_the_form', defaultMessage: 'perun.batch.fill_in_the_form' }))
+      alertUserV2({
+        type: 'info',
+        title: this.context.intl.formatMessage({ id: 'perun.batch.fill_in_the_form', defaultMessage: 'perun.batch.fill_in_the_form' })
       })
     }
-    // component.setState(initialState)
     this.setState({ showTable: false })
-    // this.updateUrl('action', 'processInfo')
   }
 
   getJobTemp(e, jobIdUrl) {
-    let type
     let jobTemplate
     let component = this
     let jobtypeId = e
@@ -724,51 +670,19 @@ class BatchWrapper extends React.Component {
     }
 
     const url = config.svConfig.restSvcBaseUrl + config.svConfig.triglavRestVerbs.GET_JOB_TEMPLATES + component.props.svSession + '/' + jobtypeId
-    axios.get(url)
-      .then((response) => {
-        if (response.data) {
-          // this.updateUrl('batch_type', jobtypeId)
-          component.iterateBatchDataTemplate(response.data, this.context.intl.formatMessage({ id: 'perun.batch.choose_process', defaultMessage: 'perun.batch.choose_process' }), 2, '', jobTemplate)
-          component.inputAndSearch('', jobTemplate)
-        }
-      })
-      .catch((response) => {
-        // component.logout(response)
-        type = response.response.data.type
-        type = type.toLowerCase()
-        component.setState({ alert: alertUser(true, type, response.response.data.message) })
-      })
+    axios.get(url).then((response) => {
+      if (response.data) {
+        component.iterateBatchDataTemplate(response.data, this.context.intl.formatMessage({ id: 'perun.batch.choose_process', defaultMessage: 'perun.batch.choose_process' }), 2, '', jobTemplate)
+        component.inputAndSearch('', jobTemplate)
+      }
+    }).catch((err) => {
+      console.error(err)
+      alertUserResponse({ response: err })
+    })
 
     component.setState({ showStatsState: false })
   }
 
-  /* update url with params f.r */
-  // updateUrl (key, value) {
-  //   let urlContent = this.props.location
-  //   let pathname = urlContent.pathname;
-  //   // returns path: '/main/batch'
-  //   let searchParams = new URLSearchParams(urlContent.search);
-  //   // returns the existing query
-  //   searchParams.set(key, value);
-  //   this.props.history.push({
-  //     pathname: pathname,
-  //     search: searchParams.toString()
-  //   });
-  // }
-
-  logout(checkResponse) {
-    if (checkResponse) {
-      if (checkResponse.type === 'ERROR') {
-        if (checkResponse.labelCode === 'perun.batch.sessionExpired') {
-          const restUrl = config.svConfig.restSvcBaseUrl + config.svConfig.triglavRestVerbs.CORE_LOGOUT + this.props.svSession
-          redux.store.dispatch(redux.logoutUser(restUrl))
-          this.hashHistory.push('/home/login')
-        }
-      }
-    }
-  }
-
-  /* do magic to make sense of the json f.r */
   inputParams(e, getFile) {
     if (e.target.id) {
       for (let i = 0; i < this.state.formFieldId.length; i++) {
@@ -782,22 +696,16 @@ class BatchWrapper extends React.Component {
                 elementArr.push(currentField, boolVal)
                 let updatedFormFieldId = elementArr.join('-')
 
-                let formFieldId = [...this.state.formFieldId]; // create the copy of state array, AS
-                formFieldId[i] = updatedFormFieldId; // assign new value, AS
-                this.setState({ formFieldId }); // update the state value, AS
+                let formFieldId = [...this.state.formFieldId]; // create the copy of state array
+                formFieldId[i] = updatedFormFieldId; // assign new value
+                this.setState({ formFieldId }); // update the state value
               }
-              // else {
-              //   console.log('< 0 must fill the field')
-              // }
             }
           }
-          // else if (this.state.formFieldId[i].split('-')[1] == 'false') {
-          //   console.log('mandatory is false')
-          // }
         }
       }
-      /* update state with uploaded file and create label
-      with name from the file f.r */
+
+      /* update state with uploaded file and create label with name from the file */
       if (getFile === 'getUploadName') {
         this.setState({ [e.target.id]: e.target.files[0] })
         let file = e.target.files[0]
@@ -839,22 +747,19 @@ class BatchWrapper extends React.Component {
     if (this.state.jobId && this.state.batchName) {
       let th1s = this
       let url = window.server + '/SvBatch/getBatchJobParam/' + th1s.props.svSession + '/' + th1s.state.jobId
-      axios.get(url)
-        .then((response) => {
-          if (response.data) {
-            th1s.showDisplayBatchJobParamModal(response.data)
-          }
-        })
-        .catch((error) => {
-          if (error) {
-            console.log(error)
-            if (error.data) {
-              alertUser(true, error.data.type.toLowerCase(), error.data.message)
-            }
-          }
-        })
+      axios.get(url).then((response) => {
+        if (response.data) {
+          th1s.showDisplayBatchJobParamModal(response.data)
+        }
+      }).catch((err) => {
+        console.error(err)
+        alertUserResponse({ response: err })
+      })
     } else {
-      alertUser(true, 'info', this.context.intl.formatMessage({ id: 'perun.batch.choose_appropriate_grid_row', defaultMessage: 'perun.batch.choose_appropriate_grid_row' }),)
+      alertUserV2({
+        type: 'info',
+        title: this.context.intl.formatMessage({ id: 'perun.batch.choose_appropriate_grid_row', defaultMessage: 'perun.batch.choose_appropriate_grid_row' })
+      })
     }
   }
 
@@ -885,8 +790,7 @@ class BatchWrapper extends React.Component {
     this.setState({ showTable: false, showJson: true, showFormProcess: false, showTemplate: false, showStop: false, showStart: false, showTablePreview: false, showActionsBtn: false, showReport: false, showStatsState: false, showDownloadZipBtn: false, startJob: false, stopJob: false })
   }
 
-  onChange(e, process, number, comment) {
-    // the next row should be deleted when readUrl, updateUrl will work
+  onChange(e, _process, _number, _comment) {
     this.setState({ [e.target.name]: e.target.value })
     // if (e.target) {
     //   if (e.target.name === 'process') {
@@ -931,7 +835,6 @@ class BatchWrapper extends React.Component {
   }
 
   saveSelectedIdbr() {
-    let type
     let component = this.state
     const restUrl = config.svConfig.restSvcBaseUrl + config.svConfig.triglavRestVerbs.REMOVE_OBJ_FROM_SELECTION
     let batch_params = { "jobId": component.jobId, "files": component.removeIdbr }
@@ -942,15 +845,13 @@ class BatchWrapper extends React.Component {
       url: restUrl + this.props.svSession,
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
     }).then(function () {
-      component.setState({ alert: alertUser(true, 'success', 'success'), showTemplate: false })
+      alertUserV2({ type: 'success', title: 'Success' })
+      component.setState({ showTemplate: false })
       component.selectObjects();
+    }).catch(function (err) {
+      console.error(err)
+      alertUserResponse({ response: err })
     })
-      .catch(function (response) {
-        // component.logout(response)
-        type = response.response.data.type
-        type = type.toLowerCase()
-        component.setState({ alert: alertUser(true, type, response.response.data.message) })
-      })
   }
 
   componentWillUnmount() {
@@ -960,21 +861,15 @@ class BatchWrapper extends React.Component {
 
   /* get payment/process actions */
   getActions(jobId) {
-    let type
-    const th1s = this
     const url = config.svConfig.restSvcBaseUrl + config.svConfig.triglavRestVerbs.GET_ACTIONS + this.props.svSession + '/' + jobId
-    axios.get(url)
-      .then((response) => {
-        if (response.data) {
-          this.iterateActions(response.data)
-        }
-      })
-      .catch((response) => {
-        // th1s.logout(response)
-        type = response.data.type
-        type = type.toLowerCase()
-        th1s.setState({ alert: alertUser(true, type, response.data.message) })
-      })
+    axios.get(url).then((response) => {
+      if (response?.data) {
+        this.iterateActions(response.data)
+      }
+    }).catch((err) => {
+      console.error(err)
+      alertUserResponse({ response: err })
+    })
   }
 
   /* iterate payment/process actions */
@@ -996,21 +891,15 @@ class BatchWrapper extends React.Component {
 
   /* get job report */
   getReport(jobId) {
-    let type
-    const th1s = this
     const url = config.svConfig.restSvcBaseUrl + config.svConfig.triglavRestVerbs.GET_BATCH_REPORTS + this.props.svSession + '/' + jobId
-    axios.get(url)
-      .then((response) => {
-        if (response.data) {
-          this.iterateReport(response.data)
-        }
-      })
-      .catch((response) => {
-        // th1s.logout(response)
-        type = response.data.type
-        type = type.toLowerCase()
-        th1s.setState({ alert: alertUser(true, type, response.data.message) })
-      })
+    axios.get(url).then((response) => {
+      if (response.data) {
+        this.iterateReport(response.data)
+      }
+    }).catch((err) => {
+      console.error(err)
+      alertUserResponse({ response: err })
+    })
   }
 
   iterateReport(reports) {
@@ -1031,7 +920,6 @@ class BatchWrapper extends React.Component {
 
   generatePayment(url) {
     let PAYMENT_BATCH = url
-    let type
     let th1s = this
     const restUrl = config.svConfig.restSvcBaseUrl + PAYMENT_BATCH
     let batch_payment = { "jobId": th1s.state.jobId }
@@ -1042,14 +930,11 @@ class BatchWrapper extends React.Component {
       url: restUrl + this.props.svSession,
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
     }).then(function (response) {
-      th1s.setState({ alert: alertUser(true, response.data.type.toLowerCase(), response.data.data.message, null, th1s.closeLoading()) })
+      alertUserResponse({ response: response?.data, onConfirm: () => th1s.closeLoading() })
+    }).catch(function (err) {
+      console.error(err)
+      alertUserResponse({ response: err, onConfirm: () => th1s.closeLoading() })
     })
-      .catch(function (response) {
-        // th1s.logout(response)
-        type = response.data.type
-        type = type.toLowerCase()
-        th1s.setState({ alert: alertUser(true, type, response.data.message, null, th1s.closeLoading()) })
-      })
   }
 
   closeLoading() {
@@ -1065,7 +950,6 @@ class BatchWrapper extends React.Component {
 
   deleteActionModal(paymentRemoveUrl) {
     let REMOVE_PAYMENT_SELECTION = paymentRemoveUrl
-    let type
     const th1s = this
     const restUrl = config.svConfig.restSvcBaseUrl + REMOVE_PAYMENT_SELECTION
     let delete_payment = { "jobId": th1s.state.jobId, "files": th1s.state.delete }
@@ -1075,35 +959,28 @@ class BatchWrapper extends React.Component {
       url: restUrl + this.props.svSession,
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
     }).then(function (response) {
-      th1s.setState({ alert: alertUser(true, response.data.type.toLowerCase(), response.data.data.message), showDeleteModal: false })
+      alertUserResponse({ response: response?.data })
+      th1s.setState({ showDeleteModal: false })
+    }).catch(function (err) {
+      console.error(err)
+      alertUserResponse({ response: err })
     })
-      .catch(function (response) {
-        // th1s.logout(response)
-        type = response.data.type
-        type = type.toLowerCase()
-        th1s.setState({ alert: alertUser(true, type, response.data.message) })
-      })
     this.setState({ delete: '' })
   }
 
   showActiveProcessStats(jobId, status) {
-    let type
     const url = config.svConfig.restSvcBaseUrl + config.svConfig.triglavRestVerbs.GET_JOB_INFO + this.props.svSession + '/' + jobId
-    axios.get(url)
-      .then((response) => {
-        if (response.data) {
-          this.iterateStats(response.data.data, status)
-        }
-      })
-      .catch((response) => {
-        // this.logout(response)
-        type = response.response.data.type
-        type = type.toLowerCase()
-        this.setState({ alert: alertUser(true, type, response.response.data.message) })
-      })
+    axios.get(url).then((response) => {
+      if (response.data) {
+        this.iterateStats(response?.data?.data, status)
+      }
+    }).catch((err) => {
+      console.error(err)
+      alertUserResponse({ response: err })
+    })
   }
 
-  iterateStats(stats, status) {
+  iterateStats(stats, _status) {
     let statsArr = []
     let timeArr = []
     let statusHTML
@@ -1145,19 +1022,15 @@ class BatchWrapper extends React.Component {
       if (numProcessedObj + numProcessedObjWithErr + numSkippedObj === numSelObj) {
         GridManager.reloadGridData('SVAROG_BATCH_JOB' + '_' + this.state.batch_type + this.state.templateId)
         clearInterval(this.interval)
-        // if (numProcessedObjWithErr !== 0 && status === 'FINISHED') {
-        //   this.setState({ processWithErr: true })
-        // }
       }
     } else {
-      // this.setState({ alert: alertUser(true, 'info', `${this.context.intl.formatMessage({ id: 'perun.batch.error_selected_objects', defaultMessage: 'perun.batch.error_selected_objects' })}`)})
       this.setState({ showStatsState: false, showStatsHtml: '' })
       clearInterval(this.interval)
     }
   }
 
   render() {
-    const { showButton, cadLocationGridModal, processWithErr, removeIdbr, formRemoveIDBR, process, num, showStop, showStart, comment, batchJson, batchJsonTemp, batchtemplate, alert, showJson, showTemplate, showTablePreview, showTable, showFormProcess, selectedApps, showDownloadZipBtn, showActionsBtn, showReport, showDeleteModal, showStatsHtml, showStatsState, batchStatus, loading, batchName, startJob, stopJob, displayBatchJobParamModal } = this.state
+    const { showButton, cadLocationGridModal, processWithErr, process, num, comment, batchJson, batchJsonTemp, batchtemplate, alert, showJson, showTemplate, showTablePreview, showTable, showFormProcess, selectedApps, showDownloadZipBtn, showActionsBtn, showReport, showDeleteModal, showStatsHtml, showStatsState, loading, batchName, startJob, stopJob, displayBatchJobParamModal } = this.state
     return (
       <React.Fragment>
         {loading}
@@ -1183,15 +1056,6 @@ class BatchWrapper extends React.Component {
                   {stopJob && <button className='batch-button button-reset button-stop-process custom-form-elements' id='stop-process-btn' type='submit' onClick={this.stopJob}>{this.context.intl.formatMessage({ id: 'perun.batch.stop_process', defaultMessage: 'perun.batch.stop_process' })}</button>}
                 </div>
               </div>}
-              {/* {formRemoveIDBR &&
-            <RankingModal submitAction={this.saveSelectedIdbr} closeModal={this.closeModal}
-              modalTitle='Отстранување на барања од селекција'
-              modalContent={<form>
-                <textarea className={`${style['custom-form-elements']} ${style['selectionRemove-textarea']}`} name='removeIdbr'
-                  value={removeIdbr} id='removeIdbr' rows='10'
-                  placeholder='Внесете листа на ИДБР-а кои сакате да ги отстраните од одбраната селекција...' onChange={this.onChange} />
-              </form>} />
-            } */}
               <br />
               {showStatsState && <div className='batch-form-container animation-top'>
                 <p>{this.context.intl.formatMessage({ id: 'perun.batch.process_stats', defaultMessage: 'perun.batch.process_stats' })} <b>{batchName}</b></p>
