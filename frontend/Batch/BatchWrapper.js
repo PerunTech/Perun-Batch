@@ -91,7 +91,7 @@ class BatchWrapper extends React.Component {
     }
   }
 
-  /* read url and execute appropriate actions f.r */
+  /* read url and execute appropriate actions */
   readUrlState(urlContent) {
     let params = queryString.parse(urlContent)
     if (params.batch_type) {
@@ -551,7 +551,7 @@ class BatchWrapper extends React.Component {
         alertUserResponse({ response: response.data })
         component.setState({ showFormProcess: true, startJob: false, stopJob: true })
         GridManager.reloadGridData('SVAROG_BATCH_JOB' + '_' + component.state.batch_type + component.state.templateId)
-        /* set interval and show statistics of the running process f.r */
+        /* set interval and show statistics of the running process */
         component.showActiveProcessStats(component.state.jobId, component.interval = setInterval(
           () => component.showActiveProcessStats(component.state.jobId)
           , 7400))

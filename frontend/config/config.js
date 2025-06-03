@@ -50,7 +50,7 @@ export const svConfig = {
     GET_CONFIGURATION_MODULE_CARDS: '/SvSecurity/getConfigModuleCardsEntry/',
     GET_CONFIGURATION_MODULE_DB: '/WsConf/getConfigModuleCardsEntry/',
     SEND_ACTIVATION_LINK: '/SvSecurity/sendActivationLink',
-    /* Get batch type f.r */
+    /* Get batch type */
     GET_BATCH_TYPE: '/SvBatch/getBatchJobTypes/',
     GET_JOB_TEMPLATES: '/SvBatch/getBatchJobTemplates/',
     GET_PARAMS_TEMPLATES: '/SvBatch/getParamByTemplate/',
