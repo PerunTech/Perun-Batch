@@ -1017,7 +1017,6 @@ class BatchWrapper extends React.Component {
                 {batchJsonTemp}
                 {showButton}
               </div>
-              <br />
               {showFormProcess && <div className='batch-form-container animation-top form-process'>
                 <p>{this.context.intl.formatMessage({ id: 'perun.batch.selected_objects_number', defaultMessage: 'perun.batch.selected_objects_number' })} - {selectedApps}</p>
                 <div className='batch-flex-parent'>
@@ -1025,7 +1024,6 @@ class BatchWrapper extends React.Component {
                   {stopJob && <button className='batch-button button-reset button-stop-process custom-form-elements' id='stop-process-btn' type='submit' onClick={this.stopJob}>{this.context.intl.formatMessage({ id: 'perun.batch.stop_process', defaultMessage: 'perun.batch.stop_process' })}</button>}
                 </div>
               </div>}
-              <br />
               {showStatsState && <div className='batch-form-container animation-top'>
                 <p>{this.context.intl.formatMessage({ id: 'perun.batch.process_stats', defaultMessage: 'perun.batch.process_stats' })} <b>{batchName}</b></p>
                 {showStatsHtml}
