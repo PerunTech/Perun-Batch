@@ -721,12 +721,9 @@ class BatchWrapper extends React.Component {
     let showButton = <div id='searchb' className='expanseBtnHolder'><button className='batch-button-default batch-button' onClick={this.showCreateForm}>{this.context.intl.formatMessage({ id: 'perun.batch.create', defaultMessage: 'perun.batch.create' })}</button><button className='batch-button-default batch-button' onClick={this.showSearchResult}>{this.context.intl.formatMessage({ id: 'perun.batch.search', defaultMessage: 'perun.batch.search' })}</button></div>
     if (predefValue) {
       this.setState({ 'templateId': predefValue, showButton: showButton })
-      // this.updateUrl('templateId', predefValue)
     } else if (e) {
       this.setState({ [e.target.name]: e.target.value, showButton: showButton, showTablePreview: false, showDownloadZipBtn: false, formRemoveIDBR: false, showActionsBtn: false, showReport: false, showStatsState: true, showStatsHtml: false, showFormProcess: false, startJob: false, stopJob: false })
-      // this.updateUrl(e.target.name, e.target.value)
     }
-
     this.setState({ showStatsState: false })
   }
 
@@ -735,11 +732,9 @@ class BatchWrapper extends React.Component {
     if (this.state.templateId) {
       templateId = this.state.templateId
     }
-
     if (this.state.batch_type) {
       batch_type = this.state.batch_type
     }
-    // this.updateUrl('action','grid');
     let showTablePreview = <SearchResults key={'SVAROG_BATCH_JOB_' + batch_type + templateId} templateId={templateId} batch_type={batch_type} getRowId={this.getRowId} batchJobParamDisplay={this.batchJobParamDisplay} />
     this.setState({ showTablePreview: showTablePreview, showTable: true, showJson: false, showTemplate: false, showActionsBtn: false, showReport: false, showFormProcess: false, showStatsState: false, showDownloadZipBtn: false, startJob: false, stopJob: false })
   }
@@ -787,37 +782,11 @@ class BatchWrapper extends React.Component {
   }
 
   showCreateForm() {
-    // this.updateUrl('action','createProcess');
     this.setState({ showTable: false, showJson: true, showFormProcess: false, showTemplate: false, showStop: false, showStart: false, showTablePreview: false, showActionsBtn: false, showReport: false, showStatsState: false, showDownloadZipBtn: false, startJob: false, stopJob: false })
   }
 
-  onChange(e, _process, _number, _comment) {
+  onChange(e) {
     this.setState({ [e.target.name]: e.target.value })
-    // if (e.target) {
-    //   if (e.target.name === 'process') {
-    //     this.updateUrl('processName', e.target.value)
-    //   }
-    //   if (e.target.name === 'num') {
-    //     this.updateUrl('processNumber', e.target.value)
-    //   }
-    //   if (e.target.name === 'comment') {
-    //     this.updateUrl('processNote', e.target.value)
-    //   }
-    //   if (e.target.name === 'delete') {
-    //     this.setState({ delete : e.target.value })
-    //   } else {
-    //     this.setState({ [e.target.name]: e.target.value })
-    //   }
-    // }
-    // if (process) {
-    //   this.setState({ process: process })
-    // }
-    // if (number) {
-    //   this.setState({ num: number })
-    // }
-    // if (comment) {
-    //   this.setState({ comment: comment })
-    // }
   }
 
   onReset(e) {
