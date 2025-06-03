@@ -1071,7 +1071,6 @@ class BatchWrapper extends React.Component {
                 </ReactBootstrapModal.Header>
                 <ReactBootstrapModal.Body className={"farm-registry-modal-body"}>
                   <div className='flex-table-child batch-form-container animation-top' id='custom-form'>
-                    <p>{this.context.intl.formatMessage({ id: 'perun.batch.create_new_process', defaultMessage: 'perun.batch.create_new_process' })}</p>
                     <InputElement name='process' value={process} placeholder={this.context.intl.formatMessage({ id: 'perun.batch.process_name', defaultMessage: 'perun.batch.process_name' })} label='process' type='input' onChange={this.onChange} id='process' />
                     <InputElement name='num' value={num} placeholder={this.context.intl.formatMessage({ id: 'perun.batch.number_threads', defaultMessage: 'perun.batch.number_threads' })} label='num' type='number' onChange={this.onChange} id='num' />
                     <textarea className='custom-form-elements custom-textarea' name='comment' value={comment} id='comment' rows='4' placeholder={this.context.intl.formatMessage({ id: 'perun.batch.notes', defaultMessage: 'perun.batch.notes' })} onChange={this.onChange} />
