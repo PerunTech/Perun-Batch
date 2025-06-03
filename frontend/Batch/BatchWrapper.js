@@ -1027,7 +1027,7 @@ class BatchWrapper extends React.Component {
               {showStatsState && <div className='batch-form-container animation-top'>
                 <p>{this.context.intl.formatMessage({ id: 'perun.batch.process_stats', defaultMessage: 'perun.batch.process_stats' })} <b>{batchName}</b></p>
                 {showStatsHtml}
-                {processWithErr && <button className='batch-button button-process' onClick={() => this.runJobSelection('RERUN_JOB')}>{this.context.intl.formatMessage({ id: 'perun.batch.reprocess', defaultMessage: 'perun.batch.reprocess' })}</button>}
+                {processWithErr && <button className='batch-button-default button-process' onClick={() => this.runJobSelection('RERUN_JOB')}>{this.context.intl.formatMessage({ id: 'perun.batch.reprocess', defaultMessage: 'perun.batch.reprocess' })}</button>}
               </div>}
               {showDownloadZipBtn && <button title={this.context.intl.formatMessage({ id: 'perun.batch.download_log', defaultMessage: 'perun.batch.download_log' })} onClick={this.downloadZip} className='batch-button button-home custom-form-elements'>{iconManager.getIcon('download')} {this.context.intl.formatMessage({ id: 'perun.batch.system_preview', defaultMessage: 'perun.batch.system_preview' })}</button>}
             </div>
