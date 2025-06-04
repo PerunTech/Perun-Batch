@@ -128,7 +128,7 @@ class BatchWrapper extends React.Component {
   getJobType(batch_type) {
     const url = config.svConfig.restSvcBaseUrl + config.svConfig.triglavRestVerbs.GET_BATCH_TYPE + this.props.svSession
     axios.get(url).then((response) => {
-      if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+      if (response?.data && Array.isArray(response.data) && response.data.length > 0) {
         this.iterateBatchDataTemplate(response.data, this.context.intl.formatMessage({
           id: 'perun.batch.choose_process_type', defaultMessage: 'perun.batch.choose_process_type'
         }), 1, '', batch_type)
@@ -238,7 +238,7 @@ class BatchWrapper extends React.Component {
     const component = this
     const url = config.svConfig.restSvcBaseUrl + config.svConfig.triglavRestVerbs.GET_PARAMS_TEMPLATES + component.props.svSession + '/' + templateId
     axios.get(url).then((response) => {
-      if (response.data.data.length > 0) {
+      if (response?.data?.data?.length > 0) {
         response.data.data.forEach(template => {
           if (template.name === 'Ид на модул') {
             component.getAppTypes(response.data)
@@ -262,7 +262,7 @@ class BatchWrapper extends React.Component {
     let component = this
     const url = config.svConfig.restSvcBaseUrl + config.svConfig.triglavRestVerbs.GET_DROP_DOWN_VALUES + component.props.svSession + '/APPLICATION_TYPE/REGIONAL_OFFICE/2019'
     axios.get(url).then((response) => {
-      if (response.data) {
+      if (response?.data) {
         component.setState({ loading: false }, () => component.createJsonTemp(dataTmp, response.data))
       }
     }).catch((err) => {
@@ -277,7 +277,7 @@ class BatchWrapper extends React.Component {
     this.setState({ loading: <Loading /> })
     let component = this
     axios.get(url).then(res => {
-      if (res.data) {
+      if (res?.data) {
         this.setState({ loading: false, [codeListType]: res.data }, () => component.createJsonTemp(dataTmp))
       }
     }).catch(err => {
@@ -409,7 +409,7 @@ class BatchWrapper extends React.Component {
         if (batch_params.attachment) {
           component.setState({ attachment: undefined })
         }
-        if (response.data.type === 'SUCCESS') {
+        if (response?.data?.type === 'SUCCESS') {
           component.selectObjects()
         }
       }).catch(function (err) {
@@ -611,7 +611,7 @@ class BatchWrapper extends React.Component {
 
     const url = config.svConfig.restSvcBaseUrl + config.svConfig.triglavRestVerbs.GET_JOB_TEMPLATES + component.props.svSession + '/' + jobtypeId
     axios.get(url).then((response) => {
-      if (response.data) {
+      if (response?.data) {
         component.iterateBatchDataTemplate(response.data, this.context.intl.formatMessage({ id: 'perun.batch.choose_process', defaultMessage: 'perun.batch.choose_process' }), 2, '', jobTemplate)
         component.inputAndSearch('', jobTemplate)
       }
@@ -801,7 +801,7 @@ class BatchWrapper extends React.Component {
   getReport(jobId) {
     const url = config.svConfig.restSvcBaseUrl + config.svConfig.triglavRestVerbs.GET_BATCH_REPORTS + this.props.svSession + '/' + jobId
     axios.get(url).then((response) => {
-      if (response.data) {
+      if (response?.data) {
         this.iterateReport(response.data)
       }
     }).catch((err) => {
@@ -878,7 +878,7 @@ class BatchWrapper extends React.Component {
   showActiveProcessStats(jobId, status) {
     const url = config.svConfig.restSvcBaseUrl + config.svConfig.triglavRestVerbs.GET_JOB_INFO + this.props.svSession + '/' + jobId
     axios.get(url).then((response) => {
-      if (response.data) {
+      if (response?.data) {
         this.iterateStats(response?.data?.data, status)
       }
     }).catch((err) => {
