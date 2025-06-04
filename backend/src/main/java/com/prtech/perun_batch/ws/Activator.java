@@ -98,8 +98,7 @@ public class Activator implements BundleActivator {
 	 */
 	private ArrayList<ISvExecutor> initExecutors() {
 		ArrayList<ISvExecutor> list = new ArrayList<ISvExecutor>();
-		list.add(new CreateInspectionExecutor());
-		list.add(new CreateInspectionsSelectExecutor());
+		// list.add(new HelloExecutor());
 		return list;
 
 	}
