@@ -1,11 +1,11 @@
 import * as config from '../config/config'
 import SearchResults from './SearchResults'
 import queryString from 'query-string';
-import { React, connect, elements, axios, PropTypes, createHashHistory, ComponentManager, GridManager, Modal, Loading } from 'perun-core'
+import { React, connect, elements, axios, PropTypes, createHashHistory, ComponentManager, GridManager, Modal as CoreModal, Loading } from 'perun-core'
 import Statistics from '../Statistics/Statistics'
 import { iconManager } from '../assets/svgHolder'
 const { Dropdown, InputElement, alertUserV2, alertUserResponse, ReactBootstrap } = elements
-const { Modal: ReactBootstrapModal } = ReactBootstrap
+const { Modal } = ReactBootstrap
 
 const initialState = {
   process: '',
@@ -851,7 +851,7 @@ class BatchWrapper extends React.Component {
 
   showModal(paymentRemoveUrl) {
     let input = <textarea className='custom-form-elements custom-textarea' name='delete' value={this.state.delete} placeholder={this.context.intl.formatMessage({ id: 'perun.batch.enter_idn', defaultMessage: 'perun.batch.enter_idn' })} label='delete' type='input' onChange={this.onChange} id='delete' />
-    let modal = <Modal modalTitle={this.context.intl.formatMessage({ id: 'perun.batch.delete_selection', defaultMessage: 'perun.batch.delete_selection' })} nameSubmitBtn={this.context.intl.formatMessage({ id: 'perun.batch.save_changes', defaultMessage: 'perun.batch.save_changes' })} modalContent={input} submitAction={() => this.deleteActionModal(paymentRemoveUrl)} nameCloseBtn={this.context.intl.formatMessage({ id: 'perun.batch.close', defaultMessage: 'perun.batch.close' })} closeModal={this.closeModal} />
+    let modal = <CoreModal modalTitle={this.context.intl.formatMessage({ id: 'perun.batch.delete_selection', defaultMessage: 'perun.batch.delete_selection' })} nameSubmitBtn={this.context.intl.formatMessage({ id: 'perun.batch.save_changes', defaultMessage: 'perun.batch.save_changes' })} modalContent={input} submitAction={() => this.deleteActionModal(paymentRemoveUrl)} nameCloseBtn={this.context.intl.formatMessage({ id: 'perun.batch.close', defaultMessage: 'perun.batch.close' })} closeModal={this.closeModal} />
     this.setState({ showDeleteModal: modal })
   }
 
@@ -944,15 +944,15 @@ class BatchWrapper extends React.Component {
         {cadLocationGridModal}
         {showDeleteModal}
         {batchJobParamModal && batchJobParams && (
-          <ReactBootstrapModal className={"farm-registry-modal"} show={batchJobParamModal} onHide={() => this.closeDisplayBatchJobParamModal()}>
-            <ReactBootstrapModal.Header className={"farm-registry-modal-header"} closeButton>
-              <ReactBootstrapModal.Title>{batchName}</ReactBootstrapModal.Title>
-            </ReactBootstrapModal.Header>
-            <ReactBootstrapModal.Body className={"farm-registry-modal-body"}>
+          <Modal className={"farm-registry-modal"} show={batchJobParamModal} onHide={() => this.closeDisplayBatchJobParamModal()}>
+            <Modal.Header className={"farm-registry-modal-header"} closeButton>
+              <Modal.Title>{batchName}</Modal.Title>
+            </Modal.Header>
+            <Modal.Body className={"farm-registry-modal-body"}>
               {this.generateBatchJobParamsPreview()}
-            </ReactBootstrapModal.Body>
-            <ReactBootstrapModal.Footer className={"farm-registry-modal-footer"} />
-          </ReactBootstrapModal>
+            </Modal.Body>
+            <Modal.Footer className={"farm-registry-modal-footer"} />
+          </Modal>
         )}
         <div id='holdComp' className='holdComp'>
           <div className='batch-flex-parent'>
@@ -979,11 +979,11 @@ class BatchWrapper extends React.Component {
               {showDownloadZipBtn && <button title={this.context.intl.formatMessage({ id: 'perun.batch.download_log', defaultMessage: 'perun.batch.download_log' })} onClick={this.downloadZip} className='batch-button button-home custom-form-elements'>{iconManager.getIcon('download')} {this.context.intl.formatMessage({ id: 'perun.batch.system_preview', defaultMessage: 'perun.batch.system_preview' })}</button>}
             </div>
             {showJson && (
-              <ReactBootstrapModal className={"farm-registry-modal"} show={showJson} onHide={() => this.setState({ showJson: false })}>
-                <ReactBootstrapModal.Header className={"farm-registry-modal-header"} closeButton>
-                  <ReactBootstrapModal.Title>{this.context.intl.formatMessage({ id: 'perun.batch.create_new_process', defaultMessage: 'perun.batch.create_new_process' })}</ReactBootstrapModal.Title>
-                </ReactBootstrapModal.Header>
-                <ReactBootstrapModal.Body className={"farm-registry-modal-body"}>
+              <Modal className={"farm-registry-modal"} show={showJson} onHide={() => this.setState({ showJson: false })}>
+                <Modal.Header className={"farm-registry-modal-header"} closeButton>
+                  <Modal.Title>{this.context.intl.formatMessage({ id: 'perun.batch.create_new_process', defaultMessage: 'perun.batch.create_new_process' })}</Modal.Title>
+                </Modal.Header>
+                <Modal.Body className={"farm-registry-modal-body"}>
                   <div className='flex-table-child batch-form-container animation-top' id='custom-form'>
                     <InputElement name='process' value={process} placeholder={this.context.intl.formatMessage({ id: 'perun.batch.process_name', defaultMessage: 'perun.batch.process_name' })} label='process' type='input' onChange={this.onChange} id='process' />
                     <InputElement name='num' value={num} placeholder={this.context.intl.formatMessage({ id: 'perun.batch.number_threads', defaultMessage: 'perun.batch.number_threads' })} label='num' type='number' onChange={this.onChange} id='num' />
@@ -993,9 +993,9 @@ class BatchWrapper extends React.Component {
                       <button className='batch-button-default' id='save-btn' type='submit' onClick={this.createJsonBatchAfsardTmp}>{this.context.intl.formatMessage({ id: 'perun.batch.create_process', defaultMessage: 'perun.batch.create_process' })}</button>
                     </div>
                   </div>
-                </ReactBootstrapModal.Body>
-                <ReactBootstrapModal.Footer className={"farm-registry-modal-footer"} />
-              </ReactBootstrapModal>
+                </Modal.Body>
+                <Modal.Footer className={"farm-registry-modal-footer"} />
+              </Modal>
             )}
             {/***** righ side of the main screen *****/}
             {showTemplate && <div className='batch-form-container flex-table-child animation-top'>{this.context.intl.formatMessage({ id: 'perun.batch.fill_form', defaultMessage: 'perun.batch.fill_form' })} {batchtemplate}</div>}
