@@ -1,4 +1,4 @@
-let path = require('path');
+const path = require('path');
 
 module.exports = (_, { mode }) => {
   return {
@@ -33,18 +33,6 @@ module.exports = (_, { mode }) => {
               cacheDirectory: true
             }
           }
-        },
-        {
-          test: /(\.jsx|\.js)$/,
-          use: {
-            loader: 'babel-loader',
-            options: {
-              presets: ['@babel/preset-env', '@babel/preset-react'],
-              cacheDirectory: true
-            }
-          },
-          enforce: 'pre',
-          include: [/perun-core/]
         },
         {
           // For pure CSS (without CSS modules)
