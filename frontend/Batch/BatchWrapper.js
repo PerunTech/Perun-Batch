@@ -1,7 +1,7 @@
 import * as config from '../config/config'
 import SearchResults from './SearchResults'
 import queryString from 'query-string';
-import { React, connect, elements, axios, PropTypes, createHashHistory, ComponentManager, ExportableGrid, GridManager, Modal, Loading } from 'perun-core'
+import { React, connect, elements, axios, PropTypes, createHashHistory, ComponentManager, GridManager, Modal, Loading } from 'perun-core'
 import Statistics from '../Statistics/Statistics'
 import { iconManager } from '../assets/svgHolder'
 const { Dropdown, InputElement, alertUserV2, alertUserResponse, ReactBootstrap } = elements
@@ -41,6 +41,8 @@ class BatchWrapper extends React.Component {
       showStatsHtml: false,
       showStatsState: false,
       processWithErr: false,
+      batchJobParams: undefined,
+      batchJobParamModal: false,
     }
     this.getAppTypes = this.getAppTypes.bind(this)
     this.getRowId = this.getRowId.bind(this)
@@ -73,12 +75,8 @@ class BatchWrapper extends React.Component {
     this.hashHistory = createHashHistory()
     this.closeLoading = this.closeLoading.bind(this)
     this.batchJobParamDisplay = this.batchJobParamDisplay.bind(this)
-    this.showDisplayBatchJobParamModal = this.showDisplayBatchJobParamModal.bind(this)
     this.startProcess = this.startProcess.bind(this)
     this.closeDisplayBatchJobParamModal = this.closeDisplayBatchJobParamModal.bind(this)
-    this.displayCadLocationGridModal = this.displayCadLocationGridModal.bind(this)
-    this.closeCadLocationGridModal = this.closeCadLocationGridModal.bind(this)
-    this.onCadLocationRowClick = this.onCadLocationRowClick.bind(this)
   }
 
   componentDidMount() {
@@ -289,59 +287,6 @@ class BatchWrapper extends React.Component {
     })
   }
 
-  displayCadLocationGridModal() {
-    let cadLocationTableName = 'CAD_LOCATION'
-    let cadLocationGridId = 'CAD_LOCATION_GRID'
-
-    const grid = (
-      <ExportableGrid
-        gridType='READ_URL'
-        key={cadLocationGridId}
-        id={cadLocationGridId}
-        configTableName={`/ReactElements/getTableFieldList/${this.props.svSession}/${cadLocationTableName}`}
-        dataTableName={`/ReactElements/getTableData/${this.props.svSession}/${cadLocationTableName}/3000`}
-        onRowClickFunct={this.onCadLocationRowClick}
-        minHeight={600}
-      />
-    )
-
-    const cadLocationGridModal = (
-      <Modal
-        modalTitle={'cad_location'}
-        closeModal={this.closeCadLocationGridModal}
-        modalSize={80}
-        modalContent={grid}
-        isSecondary
-        forceCloseOnEsc
-      />
-    )
-    this.setState({ cadLocationGridModal })
-  }
-
-  closeCadLocationGridModal() {
-    let cadLocationGridId = 'CAD_LOCATION_GRID'
-    this.setState({ cadLocationGridModal: undefined })
-    ComponentManager.cleanComponentReducerState(cadLocationGridId)
-  }
-
-  onCadLocationRowClick(_id, _idx, row) {
-    let cadLocationGridId = 'CAD_LOCATION_GRID'
-    let cadLocationTableName = 'CAD_LOCATION'
-
-    const selectedCadLocationMunicipality = row[`${cadLocationTableName}.MUNICIPALITY`]
-    const columns = ComponentManager.getStateForComponent(cadLocationGridId, 'gridConfig')
-    columns.forEach(column => {
-      if (column.key === `${cadLocationTableName}.MUNICIPALITY`) {
-        column.formatterOptions?.forEach(munic => {
-          if (selectedCadLocationMunicipality === munic.value) {
-            document.getElementById('cad_munic').value = munic.title;
-            this.closeCadLocationGridModal()
-          }
-        })
-      }
-    })
-  }
-
   createJsonTemp(dataTmp, dropDownVal) {
     let appTypesDropDownVal = dropDownVal?.appTypes
     let orgUntitsDropDownVal = dropDownVal?.orgUnits
@@ -373,12 +318,6 @@ class BatchWrapper extends React.Component {
           formFieldId.push(jobParams[i].id + '-' + jobParams[i].mandatory)
         }
 
-        // if (jobParams[i].name === 'Процент случаен избор') {
-        //   htmlElementTemplate = <input className={style['custom-form-elements']}
-        //     type={fieldType} id={'cad_munic'} name={'cad_munic'} placeholder={'Притиснете за избор на катастарска општина'}
-        //     onClick={this.displayCadLocationGridModal} />
-        //   configHtmlBuffer.push(htmlElementTemplate)
-        // } else {
         if (jobParams[i].name === 'Ид на модул') {
           dropdownAppType = this.iterateBatchDataTemplate(appTypesDropDownVal, 'Листа на модули', 3, 'application.app_type_id')
           configHtmlBuffer.push(dropdownAppType)
@@ -744,8 +683,8 @@ class BatchWrapper extends React.Component {
       let th1s = this
       let url = window.server + '/SvBatch/getBatchJobParam/' + th1s.props.svSession + '/' + th1s.state.jobId
       axios.get(url).then((response) => {
-        if (response.data) {
-          th1s.showDisplayBatchJobParamModal(response.data)
+        if (response?.data) {
+          this.setState({ batchJobParams: response.data, batchJobParamModal: true })
         }
       }).catch((err) => {
         console.error(err)
@@ -759,26 +698,25 @@ class BatchWrapper extends React.Component {
     }
   }
 
-  showDisplayBatchJobParamModal(batchJobParam) {
-    if (batchJobParam) {
-      let batchParamArr = []
-      for (let i = 0; i < batchJobParam.length; i++) {
-        let modalContent = <div style={{ textAlign: 'center' }}><span>{batchJobParam[i].name}</span> : <span style={{ fontWeight: 'bold' }}>{batchJobParam[i].value}</span></div>
-        batchParamArr.push(modalContent)
-      }
-      let batchJobParamModal = <Modal
-        modalTitle={this.state.batchName}
-        modalContent={batchParamArr}
-        modalSize={60}
-        classBody='customModalStyle'
-        closeModal={this.closeDisplayBatchJobParamModal}
-      />
-      this.setState({ displayBatchJobParamModal: batchJobParamModal })
-    }
+  generateBatchJobParamsPreview = () => {
+    const { batchJobParams } = this.state
+    return (
+      <div className='batch-job-params-container'>
+        <div className='batch-job-params-holder'>
+          {batchJobParams.map(param => {
+            return (
+              <div key={param.id} style={{ textAlign: 'center' }}>
+                <span>{param.name}</span> : <span style={{ fontWeight: 'bold' }}>{param.value}</span>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    )
   }
 
   closeDisplayBatchJobParamModal() {
-    this.setState({ displayBatchJobParamModal: false })
+    this.setState({ batchJobParamModal: false, batchJobParams: undefined })
   }
 
   showCreateForm() {
@@ -912,8 +850,7 @@ class BatchWrapper extends React.Component {
   }
 
   showModal(paymentRemoveUrl) {
-    let input = <textarea className='custom-form-elements custom-textarea' name='delete' value={this.state.delete} placeholder={this.context.intl.formatMessage({ id: 'perun.batch.enter_idn', defaultMessage: 'perun.batch.enter_idn' })} label='delete' type='input' onChange={this.onChange} id='delete'
-    />
+    let input = <textarea className='custom-form-elements custom-textarea' name='delete' value={this.state.delete} placeholder={this.context.intl.formatMessage({ id: 'perun.batch.enter_idn', defaultMessage: 'perun.batch.enter_idn' })} label='delete' type='input' onChange={this.onChange} id='delete' />
     let modal = <Modal modalTitle={this.context.intl.formatMessage({ id: 'perun.batch.delete_selection', defaultMessage: 'perun.batch.delete_selection' })} nameSubmitBtn={this.context.intl.formatMessage({ id: 'perun.batch.save_changes', defaultMessage: 'perun.batch.save_changes' })} modalContent={input} submitAction={() => this.deleteActionModal(paymentRemoveUrl)} nameCloseBtn={this.context.intl.formatMessage({ id: 'perun.batch.close', defaultMessage: 'perun.batch.close' })} closeModal={this.closeModal} />
     this.setState({ showDeleteModal: modal })
   }
@@ -1000,13 +937,23 @@ class BatchWrapper extends React.Component {
   }
 
   render() {
-    const { showButton, cadLocationGridModal, processWithErr, process, num, comment, batchJson, batchJsonTemp, batchtemplate, showJson, showTemplate, showTablePreview, showTable, showFormProcess, selectedApps, showDownloadZipBtn, showActionsBtn, showReport, showDeleteModal, showStatsHtml, showStatsState, loading, batchName, startJob, stopJob, displayBatchJobParamModal } = this.state
+    const { showButton, cadLocationGridModal, processWithErr, process, num, comment, batchJson, batchJsonTemp, batchtemplate, showJson, showTemplate, showTablePreview, showTable, showFormProcess, selectedApps, showDownloadZipBtn, showActionsBtn, showReport, showDeleteModal, showStatsHtml, showStatsState, loading, batchName, startJob, stopJob, batchJobParams, batchJobParamModal } = this.state
     return (
       <React.Fragment>
         {loading}
         {cadLocationGridModal}
         {showDeleteModal}
-        {displayBatchJobParamModal}
+        {batchJobParamModal && batchJobParams && (
+          <ReactBootstrapModal className={"farm-registry-modal"} show={batchJobParamModal} onHide={() => this.closeDisplayBatchJobParamModal()}>
+            <ReactBootstrapModal.Header className={"farm-registry-modal-header"} closeButton>
+              <ReactBootstrapModal.Title>{batchName}</ReactBootstrapModal.Title>
+            </ReactBootstrapModal.Header>
+            <ReactBootstrapModal.Body className={"farm-registry-modal-body"}>
+              {this.generateBatchJobParamsPreview()}
+            </ReactBootstrapModal.Body>
+            <ReactBootstrapModal.Footer className={"farm-registry-modal-footer"} />
+          </ReactBootstrapModal>
+        )}
         <div id='holdComp' className='holdComp'>
           <div className='batch-flex-parent'>
             <div className='batch-flex-form-child'>
