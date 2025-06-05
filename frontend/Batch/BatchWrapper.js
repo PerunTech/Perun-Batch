@@ -944,7 +944,7 @@ class BatchWrapper extends React.Component {
         {cadLocationGridModal}
         {showDeleteModal}
         {batchJobParamModal && batchJobParams && (
-          <Modal className={"farm-registry-modal"} show={batchJobParamModal} onHide={() => this.closeDisplayBatchJobParamModal()}>
+          <Modal className={"farm-registry-modal batch-modal"} show={batchJobParamModal} onHide={() => this.closeDisplayBatchJobParamModal()}>
             <Modal.Header className={"farm-registry-modal-header"} closeButton>
               <Modal.Title>{batchName}</Modal.Title>
             </Modal.Header>
@@ -979,7 +979,7 @@ class BatchWrapper extends React.Component {
               {showDownloadZipBtn && <button title={this.context.intl.formatMessage({ id: 'perun.batch.download_log', defaultMessage: 'perun.batch.download_log' })} onClick={this.downloadZip} className='batch-button button-home custom-form-elements'>{iconManager.getIcon('download')} {this.context.intl.formatMessage({ id: 'perun.batch.system_preview', defaultMessage: 'perun.batch.system_preview' })}</button>}
             </div>
             {showJson && (
-              <Modal className={"farm-registry-modal"} show={showJson} onHide={() => this.setState({ showJson: false })}>
+              <Modal className={"farm-registry-modal batch-modal"} show={showJson} onHide={() => this.setState({ showJson: false })}>
                 <Modal.Header className={"farm-registry-modal-header"} closeButton>
                   <Modal.Title>{this.context.intl.formatMessage({ id: 'perun.batch.create_new_process', defaultMessage: 'perun.batch.create_new_process' })}</Modal.Title>
                 </Modal.Header>
