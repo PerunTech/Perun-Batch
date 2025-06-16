@@ -13,7 +13,12 @@ class SearchResults extends React.Component {
     this.generateGridData()
   }
 
+  componentWillUnmount() {
+    ComponentManager.cleanComponentReducerState(`SVAROG_BATCH_JOB_${this.props.batch_type + this.props.templateId}`);
+  }
+
   generateGridData() {
+
     const { batch_type, templateId, svSession, batchJobParamDisplay } = this.props
     const gridType = 'SVAROG_BATCH_JOB'
     const id = batch_type + templateId
