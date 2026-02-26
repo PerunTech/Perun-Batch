@@ -32,12 +32,13 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.prtech.perun.PerunUtil;
 import com.prtech.svarog.I18n;
 import com.prtech.svarog.SvConf;
 import com.prtech.svarog.SvException;
 import com.prtech.svarog.SvFileStore;
-import com.prtech.svarog.SvNote;
 import com.prtech.svarog.SvLock;
+import com.prtech.svarog.SvNote;
 import com.prtech.svarog.SvReader;
 import com.prtech.svarog.SvWriter;
 import com.prtech.svarog.svCONST;
@@ -270,7 +271,7 @@ public class WsSvBatch {
 		String jsonObjString = "";
 		ReentrantLock lock = null;
 		String LOCK_KEY = "";
-		try 	(SvWriter svw = new SvWriter(token);) {
+		try (SvWriter svw = new SvWriter(token);) {
 			if (formVals != null)
 				for (Entry<String, List<String>> entry : formVals.entrySet()) {
 					if (entry.getKey() != null && !entry.getKey().isEmpty()) {
@@ -284,14 +285,14 @@ public class WsSvBatch {
 			jsonData = gson.fromJson(jsonObjString, JsonObject.class);
 			if (jsonData.has("name")) {
 				jobName = jsonData.get("name").getAsString();
-				LOCK_KEY+=jobName;
+				LOCK_KEY += jobName;
 			}
 			if (jsonData.has("jobTypeId")) {
 				jobTyprId = jsonData.get("jobTypeId").getAsLong();
 			}
 			if (jsonData.has("note")) {
 				note = jsonData.get("note").getAsString();
-				LOCK_KEY+=("-"+note);
+				LOCK_KEY += ("-" + note);
 			}
 			if (jsonData.has("numOfThread")) {
 				numOfThread = jsonData.get("numOfThread").getAsLong();
@@ -310,7 +311,7 @@ public class WsSvBatch {
 
 				jrh.create(MessageType.SUCCESS, I18n.getText("batch.success.create_job"),
 						I18n.getText("batch.success.create_job"), jo);
-			}else {
+			} else {
 				jrh.create(MessageType.WARNING, I18n.getText("batch.warning.job_already_created"),
 						I18n.getText("batch.warning.job_already_created"), new JsonObject());
 			}
@@ -351,7 +352,9 @@ public class WsSvBatch {
 		DbSearchExpression dbexp = null;
 		DbDataArray ret = null;
 		DbDataObject dbJob = null;
-		try (SvReader svr = new SvReader(token);SvWriter svw = new SvWriter(svr);SvFileStore svfs = new SvFileStore(svr);) {
+		try (SvReader svr = new SvReader(token);
+				SvWriter svw = new SvWriter(svr);
+				SvFileStore svfs = new SvFileStore(svr);) {
 
 			DbDataObject fileDescriptor = null;
 			JsonArray jArry = new JsonArray();
@@ -392,8 +395,8 @@ public class WsSvBatch {
 					}
 				}
 			}
-			
-			if(!jsonObjString.equals("")){
+
+			if (!jsonObjString.equals("")) {
 				JsonObject jsonData = null;
 				Gson gson = new Gson();
 				jsonData = gson.fromJson(jsonObjString, JsonObject.class);
@@ -428,16 +431,15 @@ public class WsSvBatch {
 
 					jArryParams.add(jObj);
 				}
-				DbDataArray arrJobParam = svr.getObjectsByParentId(jobId, svCONST.OBJECT_TYPE_BATCH_JOB_PARAM,
-						null, 0, 0);
+				DbDataArray arrJobParam = svr.getObjectsByParentId(jobId, svCONST.OBJECT_TYPE_BATCH_JOB_PARAM, null, 0,
+						0);
 
 				DbDataObject dbJobParam = null;
 				if (!arrJobParam.getItems().isEmpty()) {
 					dbJobParam = arrJobParam.get(0);
 				}
 				templateParams = new Gson().toJson(jArryParams);
-				DbDataObject dbBatchJobParam = SvarogBatchManager.createJobParam(dbJobParam, jobId,
-						templateParams);
+				DbDataObject dbBatchJobParam = SvarogBatchManager.createJobParam(dbJobParam, jobId, templateParams);
 
 				svw.saveObject(dbBatchJobParam, false);
 			}
@@ -466,7 +468,7 @@ public class WsSvBatch {
 
 			jrh.create(MessageType.ERROR, I18n.getText("batch.error.create_job_param"),
 					I18n.getText("batch.error.create_job_param"), new JsonObject());
-		} 
+		}
 		return Response.status(200).entity(jrh.getAll().toString()).build();
 	}
 
@@ -629,7 +631,7 @@ public class WsSvBatch {
 	@GET
 	@Produces("application/json")
 	public Response getProcessForm(@PathParam("token") String token, @Context HttpServletRequest httpRequest) {
-		try 	(SvReader svr = new SvReader(token);) {
+		try (SvReader svr = new SvReader(token);) {
 			JsonArray jArray = new JsonArray();
 			JsonObject jObj = new JsonObject();
 			JsonObject jObj2 = new JsonObject();
@@ -669,7 +671,7 @@ public class WsSvBatch {
 						I18n.getText("batch.error.getProcessForm"), new JsonObject());
 				return Response.status(200).entity(jrh.getAll().toString()).build();
 			}
-		} 
+		}
 	}
 
 	@Path("/reRunBatchJob/{token}")
@@ -730,7 +732,7 @@ public class WsSvBatch {
 	public Response getFile(@PathParam("token") String token, @PathParam("jobId") Long jobId) {
 		String filePath = "";
 		ResponseHandler jrh = new ResponseHandler();
-		try (SvReader svr = new SvReader(token);){
+		try (SvReader svr = new SvReader(token);) {
 			ArrayList<DbDataObject> jobHistory = svr
 					.getObjectsHistory(new DbSearchCriterion("OBJECT_ID", DbCompareOperand.EQUAL, jobId),
 							SvReader.getTypeIdByName("SVAROG_BATCH_JOB"), 0, 0)
@@ -793,14 +795,14 @@ public class WsSvBatch {
 					I18n.getText("batch.error.get_reports"), new JsonObject());
 
 			return Response.status(200).entity(jrh.getAll().toString()).build();
-		} 
+		}
 	}
 
 	@Path("/getActions/{token}/{jobId}")
 	@GET
 	@Produces("text/html;charset=utf-8")
 	public Response getActions(@PathParam("token") String token, @PathParam("jobId") Long jobId) {
-		try (SvReader svr = new SvReader(token);){
+		try (SvReader svr = new SvReader(token);) {
 			DbDataObject job = svr.getObjectById(jobId, svCONST.OBJECT_TYPE_BATCH_JOB, null);
 			JsonArray jArray = new JsonArray();
 			if (job.getStatus().equals("FINISHED")) {
@@ -828,7 +830,7 @@ public class WsSvBatch {
 					I18n.getText("batch.error.get_actions"), new JsonObject());
 
 			return Response.status(200).entity(jrh.getAll().toString()).build();
-		} 
+		}
 	}
 
 	@Path("/getBatchJobParam/{token}/{batchJobId}")
@@ -837,25 +839,26 @@ public class WsSvBatch {
 	public Response getBatchJobParam(@PathParam("token") String token, @PathParam("batchJobId") Long batchJobId) {
 		ResponseHandler jrh = new ResponseHandler();
 		JsonArray jArry = new JsonArray();
-		try (SvReader svr = new SvReader(token)){
-			DbDataArray params = svr.getObjectsByParentId(batchJobId, SvReader.getTypeIdByName("SVAROG_BATCH_JOB_PARAM"), null);
-			if (null==params || params.size()==0){
+		try (SvReader svr = new SvReader(token)) {
+			DbDataArray params = svr.getObjectsByParentId(batchJobId,
+					SvReader.getTypeIdByName("SVAROG_BATCH_JOB_PARAM"), null);
+			if (null == params || params.size() == 0) {
 				jrh.create(MessageType.ERROR, I18n.getText("batch.not_found_params"),
 						I18n.getText("batch.not_found_params"), new JsonObject());
-			}else{
-			DbDataObject param = params.get(0);
-			if (param != null) {
-				if (param.getVal("PARAMS_VALUE") != null) {
-					jArry = new Gson().fromJson((String) param.getVal("PARAMS_VALUE"), JsonArray.class);
-				}
-				jrh.create(MessageType.SUCCESS, I18n.getText("batch.success.get_job_params"),
-						I18n.getText("batch.success.get_job_params"), jArry);
 			} else {
-				jrh.create(MessageType.ERROR, I18n.getText("batch.not_found_params"),
-						I18n.getText("batch.not_found_params"), new JsonObject());
+				DbDataObject param = params.get(0);
+				if (param != null) {
+					if (param.getVal("PARAMS_VALUE") != null) {
+						jArry = new Gson().fromJson((String) param.getVal("PARAMS_VALUE"), JsonArray.class);
+					}
+					jrh.create(MessageType.SUCCESS, I18n.getText("batch.success.get_job_params"),
+							I18n.getText("batch.success.get_job_params"), jArry);
+				} else {
+					jrh.create(MessageType.ERROR, I18n.getText("batch.not_found_params"),
+							I18n.getText("batch.not_found_params"), new JsonObject());
+				}
 			}
-			}
-			return Response.status(200).entity(jArry.toString()).build();			
+			return Response.status(200).entity(jArry.toString()).build();
 		} catch (SvException e) {
 			jrh = new ResponseHandler();
 			if (e.getLabelCode().equals("error.invalid_session")) {
@@ -873,4 +876,79 @@ public class WsSvBatch {
 		}
 	}
 
+	@Path("/create-batch-job/{sessionId}")
+	@POST
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public Response createBatchJob(@PathParam("sessionId") String sessionId, String entity,
+			@Context HttpServletRequest httpRequest) {
+		ResponseHandler jrh = new ResponseHandler();
+		JsonObject requestData = new JsonObject();
+		String jobName = "";
+		String note = "";
+		Long numOfThread = null;
+		String jobTypeLabelCode = null;
+		String jobTemplateLabelCode = null;
+		ReentrantLock lock = null;
+		String LOCK_KEY = "";
+		DbDataObject jobTypeDbo = null;
+		DbDataObject jobTemplateDbo = null;
+		try (SvReader svr = new SvReader(sessionId); SvWriter svw = new SvWriter(svr)) {
+			try {
+				requestData = new Gson().fromJson(entity, JsonObject.class);
+			} catch (Exception e) {
+				throw new SvException("error.bad_json", svr.getInstanceUser());
+			}
+
+			if (requestData.has("name")) {
+				jobName = requestData.get("name").getAsString();
+				LOCK_KEY += jobName;
+			}
+			if (requestData.has("jobTypeLabelCode")) {
+				jobTypeLabelCode = requestData.get("jobTypeLabelCode").getAsString();
+			}
+			if (requestData.has("note")) {
+				note = requestData.get("note").getAsString();
+				LOCK_KEY += ("-" + note);
+			}
+			if (requestData.has("numOfThread")) {
+				numOfThread = requestData.get("numOfThread").getAsLong();
+			}
+			if (requestData.has("jobTemplateLabelCode")) {
+				jobTemplateLabelCode = requestData.get("jobTemplateLabelCode").getAsString();
+			}
+
+			jobTypeDbo = svr.getObjectByUnqConfId(jobTypeLabelCode, CC.SVAROG_BATCH_JOB_TYPE);
+			if (jobTypeDbo == null) {
+				throw new SvException("batch.error.job_type_not_found", svr.getInstanceUser());
+			}
+
+			jobTemplateDbo = svr.getObjectByUnqConfId(jobTemplateLabelCode, CC.SVAROG_BATCH_JOB_TEMPLATE);
+			if (jobTemplateDbo == null) {
+				throw new SvException("batch.error.job_template_not_found", svr.getInstanceUser());
+			}
+
+			lock = SvLock.getLock(LOCK_KEY, false, 0);
+			if (lock != null) {
+				DbDataObject dbBatchJob = SvarogBatchManager.createJob(jobName, jobTypeDbo.getObjectId(), note,
+						numOfThread, jobTemplateDbo.getObjectId());
+
+				svw.saveObject(dbBatchJob);
+				JsonObject resultObj = new JsonObject();
+				resultObj.addProperty("jobId", dbBatchJob.getObjectId());
+
+				jrh.create(MessageType.SUCCESS, I18n.getText("batch.success.create_job"), null, resultObj);
+			} else {
+				jrh.create(MessageType.WARNING, I18n.getText("batch.warning.job_already_created"), null,
+						new JsonObject());
+			}
+			return Response.ok().entity(jrh.getAll().toString()).build();
+		} catch (Exception e) {
+			return PerunUtil.handleException(e, jrh, "Failed to create batch job");
+		} finally {
+			if (lock != null) {
+				SvLock.releaseLock(LOCK_KEY, lock);
+			}
+		}
+	}
 }
