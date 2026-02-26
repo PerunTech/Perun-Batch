@@ -893,9 +893,7 @@ public class WsSvBatch {
 		String LOCK_KEY = "";
 		DbDataObject jobTypeDbo = null;
 		DbDataObject jobTemplateDbo = null;
-		String localeId = SvConf.getDefaultLocale();
 		try (SvReader svr = new SvReader(sessionId); SvWriter svw = new SvWriter(svr)) {
-			localeId = svr.getUserLocaleId(svr.getInstanceUser());
 			try {
 				requestData = new Gson().fromJson(entity, JsonObject.class);
 			} catch (Exception e) {
@@ -946,7 +944,7 @@ public class WsSvBatch {
 			}
 			return Response.ok().entity(jrh.getAll().toString()).build();
 		} catch (Exception e) {
-			return PerunUtil.handleException(e, jrh, localeId);
+			return PerunUtil.handleException(e, jrh, "Failed to create batch job");
 		} finally {
 			if (lock != null) {
 				SvLock.releaseLock(LOCK_KEY, lock);
