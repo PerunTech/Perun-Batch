@@ -32,6 +32,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonSyntaxException;
 import com.prtech.perun.PerunUtil;
 import com.prtech.svarog.I18n;
 import com.prtech.svarog.SvConf;
@@ -576,6 +577,46 @@ public class WsSvBatch {
 					I18n.getText("batch.error.select_objects"), new JsonObject());
 		}
 		return Response.status(200).entity(jrh.getAll().toString()).build();
+	}
+
+	@Path("/selectObjects/{token}/trigger")
+	@POST
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public Response selectObjectsTrigger(@PathParam("token") String token, String entity,
+			@Context HttpServletRequest httpRequest) {
+		ResponseHandler jrh = new ResponseHandler();
+		JsonObject requestData = new JsonObject();
+		Long jobId = null;
+		try {
+			try {
+				requestData = new Gson().fromJson(entity, JsonObject.class);
+			} catch (JsonSyntaxException e) {
+				jrh.create(MessageType.ERROR, I18n.getText("error.bad_json"), CC.EMPTY_STRING);
+				return Response.status(400).entity(jrh.getAll().toString()).build();
+			}
+			if (requestData.has("jobId")) {
+				jobId = requestData.get("jobId").getAsLong();
+			}
+
+			if (jobId == null) {
+				jrh.create(MessageType.ERROR, I18n.getText("batch.error.not_found_jobId"), CC.EMPTY_STRING);
+				return Response.status(400).entity(jrh.getAll().toString()).build();
+			}
+
+			SvarogBatchManager sbm = new SvarogBatchManager();
+			sbm.selectObjectsTrigger(jobId, token);
+			JsonObject responseJson = new JsonObject();
+			responseJson.addProperty("jobId", jobId);
+
+			jrh.create(MessageType.SUCCESS, I18n.getText("batch.success.select_objects_triggered"), CC.EMPTY_STRING,
+					responseJson);
+
+			return Response.status(202).entity(jrh.getAll().toString()).build();
+		} catch (Exception e) {
+			log4j.error(e.getMessage(), e);
+			return PerunUtil.handleException(e, "batch.error.select_objects");
+		}
 	}
 
 	@Path("/stopBatchJob")
