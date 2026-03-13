@@ -56,6 +56,7 @@ import com.prtech.svarog_common.ResponseHandler.MessageType;
 @Path("/SvBatch")
 public class WsSvBatch {
 	static final Logger log4j = SvConf.getLogger(WsSvBatch.class);
+	static final Gson gson = new Gson();
 
 	@Path("/getBatchJobTypes/{token}")
 	@GET
@@ -476,52 +477,65 @@ public class WsSvBatch {
 	@Path("/runBatchJob/{token}")
 	@POST
 	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
-	@Produces("application/json")
+	@Produces(MediaType.APPLICATION_JSON)
 	public Response runBatchJob(@PathParam("token") String token, MultivaluedMap<String, String> formVals,
 			@Context HttpServletRequest httpRequest) {
-		ResponseHandler jrh = new ResponseHandler();
-		String jsonObjString = "";
-		Long jobId = null;
 		try {
-			if (formVals != null)
+			String jsonObjString = "";
+
+			if (formVals != null) {
 				for (Entry<String, List<String>> entry : formVals.entrySet()) {
 					if (entry.getKey() != null && !entry.getKey().isEmpty()) {
 						String key = entry.getKey();
 						jsonObjString = key;
 					}
 				}
-
-			JsonObject jsonData = null;
-			Gson gson = new Gson();
-			jsonData = gson.fromJson(jsonObjString, JsonObject.class);
-
-			if (jsonData.has("jobId")) {
-				jobId = jsonData.get("jobId").getAsLong();
 			}
-			if (jobId != null) {
-				SvarogBatchManager sbm = new SvarogBatchManager();
-				sbm.runJob(jobId, token);
 
-				jrh.create(MessageType.SUCCESS, I18n.getText("batch.success.running_job"),
-						I18n.getText("batch.success.running_job"), new JsonObject());
-			} else {
-				jrh.create(MessageType.ERROR, I18n.getText("batch.error.not_found_jobId"),
-						I18n.getText("batch.error.not_found_jobId"), new JsonObject());
-			}
+			JsonObject jsonData = gson.fromJson(jsonObjString, JsonObject.class);
+			return executeRunBatchJob(jsonData, token);
 		} catch (Exception e) {
-			if (e instanceof SvException) {
-				SvException e1 = (SvException) e;
-				if (e1.getLabelCode().equals("error.invalid_session")) {
-					log4j.error(e1.getFormattedMessage());
-					jrh.create(MessageType.ERROR, I18n.getText("error.invalid_session"),
-							I18n.getText("error.invalid_session"), new JsonObject());
-					return Response.status(401).entity(jrh.getAll().toString()).build();
-				}
-			}
 			log4j.error(e.getMessage(), e);
-			jrh.create(MessageType.ERROR, I18n.getText("batch.error.running_job"),
-					I18n.getText("batch.error.running_job"), new JsonObject());
+			return PerunUtil.handleException(e, "batch.error.select_objects");
 		}
+	}
+
+	@Path("/runBatchJob/{token}")
+	@POST
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public Response runBatchJob(@PathParam("token") String token, String entity,
+			@Context HttpServletRequest httpRequest) {
+		try {
+			JsonObject jsonData = gson.fromJson(entity, JsonObject.class);
+			return executeRunBatchJob(jsonData, token);
+		} catch (Exception e) {
+			log4j.error(e.getMessage(), e);
+			return PerunUtil.handleException(e, "batch.error.select_objects");
+		}
+	}
+
+	private Response executeRunBatchJob(JsonObject jsonData, String token) throws SvException {
+		ResponseHandler jrh = new ResponseHandler();
+
+		if (jsonData == null) {
+			jrh.create(MessageType.ERROR, I18n.getText("batch.error.not_found_jobId"),
+					I18n.getText("batch.error.not_found_jobId"), new JsonObject());
+			return Response.status(400).entity(jrh.getAll().toString()).build();
+		}
+
+		Long jobId = jsonData.has("jobId") ? jsonData.get("jobId").getAsLong() : null;
+
+		if (jobId != null) {
+			SvarogBatchManager sbm = new SvarogBatchManager();
+			sbm.runJob(jobId, token);
+			jrh.create(MessageType.SUCCESS, I18n.getText("batch.success.running_job"),
+					I18n.getText("batch.success.running_job"), new JsonObject());
+		} else {
+			jrh.create(MessageType.ERROR, I18n.getText("batch.error.not_found_jobId"),
+					I18n.getText("batch.error.not_found_jobId"), new JsonObject());
+		}
+
 		return Response.status(200).entity(jrh.getAll().toString()).build();
 	}
 
