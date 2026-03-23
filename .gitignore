@@ -34,3 +34,5 @@ package-lock.json
 backend/www/perun-batch.js
 backend/www/perun-batch.js.map
 backend/www/perun-batch.js.LICENSE.txt
+
+svarog.properties
