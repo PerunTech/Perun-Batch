@@ -15,6 +15,7 @@
  *
  */
 package com.prtech.perun_batch.ws;
+
 import java.util.ArrayList;
 
 import org.apache.logging.log4j.Logger;
@@ -40,8 +41,8 @@ import com.prtech.svarog_interfaces.ISvExecutor;
  */
 public class Activator implements BundleActivator {
 	/**
-	 * The context path on the http server under which the static content from
-	 * the /www folder inside the bundle will be served
+	 * The context path on the http server under which the static content from the
+	 * /www folder inside the bundle will be served
 	 */
 	static final String httpContextPath = "/perun-batch";
 
@@ -56,14 +57,13 @@ public class Activator implements BundleActivator {
 	static final Logger log4j = SvConf.getLogger(Activator.class);
 
 	/**
-	 * List of service registrations which we use for unregistering when
-	 * cleaning up
+	 * List of service registrations which we use for unregistering when cleaning up
 	 */
 	private ArrayList<ServiceRegistration> registration = new ArrayList<ServiceRegistration>();
 
 	/**
-	 * List of JAXRS Service classes which we will later use for registration in
-	 * the bundle startup
+	 * List of JAXRS Service classes which we will later use for registration in the
+	 * bundle startup
 	 */
 	private ArrayList<Class<?>> jaxServiceClasses = initClasses();
 
@@ -74,8 +74,8 @@ public class Activator implements BundleActivator {
 	private ArrayList<ISvExecutor> executorServiceClasses = initExecutors();
 
 	/**
-	 * Member used to track the http services in order to register path for
-	 * serving static JS/Other content
+	 * Member used to track the http services in order to register path for serving
+	 * static JS/Other content
 	 */
 	private ServiceTracker httpTracker;
 
@@ -87,6 +87,7 @@ public class Activator implements BundleActivator {
 	private ArrayList<Class<?>> initClasses() {
 		ArrayList<Class<?>> list = new ArrayList<Class<?>>();
 		list.add(WsSvBatch.class);
+		list.add(BatchJobForm.class);
 		return list;
 
 	}
@@ -105,11 +106,10 @@ public class Activator implements BundleActivator {
 
 	/**
 	 * Implements BundleActivator.start(). Registers all instances of the JAXRS
-	 * services as well as all objects implementing ISvExecutor interfaces using
-	 * the bundle context;
+	 * services as well as all objects implementing ISvExecutor interfaces using the
+	 * bundle context;
 	 * 
-	 * @param context
-	 *            the framework context for the bundle.
+	 * @param context the framework context for the bundle.
 	 */
 	@SuppressWarnings("unchecked")
 	public void start(BundleContext context) {
@@ -138,7 +138,7 @@ public class Activator implements BundleActivator {
 			if (svc != null)
 				this.registration.add(svc);
 		}
-		
+
 		IPerunPlugin plg = new PerunPluginInfo();
 		log4j.info("Registering perunPlugin service class: " + plg.getClass().getName());
 		svc = context.registerService(IPerunPlugin.class.getName(), plg, null);
@@ -172,11 +172,10 @@ public class Activator implements BundleActivator {
 	}
 
 	/**
-	 * Implements BundleActivator.stop(). Unregistering all services which have
-	 * been registered
+	 * Implements BundleActivator.stop(). Unregistering all services which have been
+	 * registered
 	 * 
-	 * @param context
-	 *            the framework context for the bundle.
+	 * @param context the framework context for the bundle.
 	 */
 	public void stop(BundleContext context) throws Exception {
 		for (ServiceRegistration svc : registration) {

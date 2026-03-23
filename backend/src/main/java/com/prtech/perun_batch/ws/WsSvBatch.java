@@ -12,6 +12,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
+import javax.ws.rs.HeaderParam;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -1004,6 +1005,105 @@ public class WsSvBatch {
 			if (lock != null) {
 				SvLock.releaseLock(LOCK_KEY, lock);
 			}
+		}
+	}
+
+	@Path("/save-job-params/{jobObjId}")
+	@POST
+	@Consumes(MediaType.MULTIPART_FORM_DATA)
+	@Produces(MediaType.APPLICATION_JSON)
+	public Response saveJobParams(@HeaderParam("sessionId") String sessionId, @PathParam("jobObjId") Long jobObjId,
+			FormDataMultiPart multipart, @Context HttpServletRequest httpRequest) {
+		ResponseHandler jrh = new ResponseHandler();
+		try (SvReader svr = new SvReader(sessionId);
+				SvWriter svw = new SvWriter(svr);
+				SvFileStore svfs = new SvFileStore(svr)) {
+
+			if (jobObjId == null) {
+				throw new SvException("batch.error.missing_job_id", svr.getInstanceUser());
+			}
+
+			FormDataBodyPart filePart = multipart.getField("file");
+			byte[] fileBytes = null;
+			String fileName = "";
+			String contentType = "";
+
+			if (filePart != null) {
+				fileBytes = IOUtils.toByteArray(filePart.getValueAs(InputStream.class));
+				fileName = filePart.getFormDataContentDisposition().getFileName();
+				contentType = filePart.getMediaType().toString();
+
+				DbSearch fileNameSearch = new DbSearchCriterion("FILE_NAME", DbCompareOperand.EQUAL, fileName);
+				DbSearch fileTypeSearch = new DbSearchCriterion("FILE_TYPE", DbCompareOperand.EQUAL, "ATTACHMENT");
+				DbSearchExpression fileSearchExpr = new DbSearchExpression().addDbSearchItem(fileNameSearch)
+						.addDbSearchItem(fileTypeSearch);
+				DbDataArray existingFiles = svr.getObjects(fileSearchExpr, svCONST.OBJECT_TYPE_FILE, null, 0, 0);
+
+				if (existingFiles != null && !existingFiles.getItems().isEmpty()) {
+					throw new SvException("batch.error.file_already_exist", svr.getInstanceUser());
+				}
+			}
+
+			DbDataObject dbJob = svr.getObjectById(jobObjId, svCONST.OBJECT_TYPE_BATCH_JOB, null);
+			if (dbJob == null) {
+				throw new SvException("batch.error.job_not_found", svr.getInstanceUser());
+			}
+
+			DbDataObject dbTemplate = svr.getObjectById((Long) dbJob.getVal(CC.TEMPLATE_ID),
+					svCONST.OBJECT_TYPE_BATCH_JOB_TEMPLATE, null);
+			if (dbTemplate == null) {
+				throw new SvException("batch.error.job_template_not_found", svr.getInstanceUser());
+			}
+
+			JsonArray templateParams = dbTemplate.getVal(CC.PARAMS) != null
+					? new Gson().fromJson(dbTemplate.getAsString(CC.PARAMS), JsonArray.class)
+					: new JsonArray();
+
+			JsonArray resolvedParams = new JsonArray();
+			for (JsonElement paramEl : templateParams) {
+				JsonObject param = paramEl.getAsJsonObject().deepCopy();
+				String paramId = param.get("id").getAsString();
+				String paramType = param.get("type").getAsString();
+
+				if (paramType.equalsIgnoreCase("attachment")) {
+					param.addProperty("value", fileName);
+				} else {
+					FormDataBodyPart field = multipart.getField(paramId);
+					if (field != null) {
+						param.addProperty("value", field.getValue().trim());
+					}
+				}
+
+				resolvedParams.add(param);
+			}
+
+			DbDataArray existingJobParams = svr.getObjectsByParentId(jobObjId, svCONST.OBJECT_TYPE_BATCH_JOB_PARAM,
+					null, 0, 0);
+			DbDataObject existingJobParam = existingJobParams.getItems().isEmpty() ? null : existingJobParams.get(0);
+
+			DbDataObject dbBatchJobParam = SvarogBatchManager.createJobParam(existingJobParam, jobObjId,
+					new Gson().toJson(resolvedParams));
+			svw.saveObject(dbBatchJobParam, false);
+
+			if (fileBytes != null) {
+				DbDataObject fileDescriptor = new DbDataObject();
+				fileDescriptor.setObjectType(svCONST.OBJECT_TYPE_FILE);
+				fileDescriptor.setVal("file_size", fileBytes.length);
+				fileDescriptor.setVal("file_date", new DateTime());
+				fileDescriptor.setVal("file_name", fileName);
+				fileDescriptor.setVal("file_type", "ATTACHMENT");
+				fileDescriptor.setVal("content_type", contentType);
+				fileDescriptor.setVal("FILE_STORE_ID", svCONST.SYSTEM_FILESTORE_ID);
+				svfs.saveFile(fileDescriptor, dbJob, fileBytes, false);
+			}
+
+			svw.dbCommit();
+			svfs.dbCommit();
+
+			jrh.create(MessageType.SUCCESS, I18n.getText("batch.success.create_job_param"), null, new JsonObject());
+			return Response.ok(jrh.getAll().toString()).build();
+		} catch (Exception e) {
+			return PerunUtil.handleException(e, jrh, "batch.error.create_job_param");
 		}
 	}
 }
