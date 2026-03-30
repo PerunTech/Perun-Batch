@@ -101,15 +101,8 @@ public class BatchJobForm {
 		try (SvReader svr = new SvReader(sessionId)) {
 			JsonObject uiSchema = new JsonObject();
 
-			JsonObject jobTypeUi = new JsonObject();
-			jobTypeUi.addProperty("ui:widget", "DependencyDropdown");
-			jobTypeUi.addProperty("order", 0);
-			uiSchema.add("jobTypeLabelCode", jobTypeUi);
-
 			JsonObject jobTemplateUi = new JsonObject();
 			jobTemplateUi.addProperty("ui:widget", "hidden");
-			jobTemplateUi.addProperty("dependentOnField", "jobTypeLabelCode");
-			jobTemplateUi.addProperty("order", 1);
 			uiSchema.add("jobTemplateLabelCode", jobTemplateUi);
 
 			return Response.ok(uiSchema.toString()).build();
@@ -247,15 +240,8 @@ public class BatchJobForm {
 			JsonObject nameUi = new JsonObject();
 			uiSchema.add("name", nameUi);
 
-			JsonObject jobTypeUi = new JsonObject();
-			jobTypeUi.addProperty("ui:widget", "DependencyDropdown");
-			jobTypeUi.addProperty("order", 0);
-			uiSchema.add("jobTypeLabelCode", jobTypeUi);
-
 			JsonObject jobTemplateUi = new JsonObject();
 			jobTemplateUi.addProperty("ui:widget", "hidden");
-			jobTemplateUi.addProperty("dependentOnField", "jobTypeLabelCode");
-			jobTemplateUi.addProperty("order", 1);
 			uiSchema.add("jobTemplateLabelCode", jobTemplateUi);
 
 			JsonObject numOfThreadUi = new JsonObject();
