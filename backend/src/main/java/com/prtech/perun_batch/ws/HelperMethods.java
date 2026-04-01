@@ -11,6 +11,18 @@ final class HelperMethods {
 	private HelperMethods() {
 	}
 
+	public static JsonArray prefixKeys(String prefix, JsonArray arr) {
+		JsonArray resultArray = new JsonArray();
+		arr.forEach(elem -> {
+			if (elem.isJsonObject()) {
+				JsonObject obj = new JsonObject();
+				elem.getAsJsonObject().entrySet().stream().forEach(e -> obj.add(prefix + e.getKey(), e.getValue()));
+				resultArray.add(obj);
+			}
+		});
+		return resultArray;
+	}
+
 	public static JsonArray prepareDataArray(DbDataArray dataArray) {
 		JsonArray result = new JsonArray();
 		dataArray.getItems().stream().forEach(dbo -> {

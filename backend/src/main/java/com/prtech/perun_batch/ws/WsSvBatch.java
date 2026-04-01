@@ -1150,7 +1150,8 @@ public class WsSvBatch {
 						.filter(job -> templateId.equals(job.getAsLong(CC.TEMPLATE_ID))).collect(Collectors.toList())));
 			}
 
-			JsonArray jobsArray = HelperMethods.prepareDataArray(jobs);
+			JsonArray jobsArray = HelperMethods.prefixKeys(CC.SVAROG_BATCH_JOB + ".",
+					HelperMethods.prepareDataArray(jobs));
 			return Response.status(200).entity(jobsArray.toString()).build();
 		} catch (Exception e) {
 			return PerunUtil.handleException(e, jrh, "batch.error.search");
