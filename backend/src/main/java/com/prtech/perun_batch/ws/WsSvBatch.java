@@ -8,6 +8,7 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
@@ -1104,6 +1105,55 @@ public class WsSvBatch {
 			return Response.ok(jrh.getAll().toString()).build();
 		} catch (Exception e) {
 			return PerunUtil.handleException(e, jrh, "batch.error.create_job_param");
+		}
+	}
+
+	@Path("/search")
+	@POST
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public Response search(@HeaderParam("sessionId") String sessionId, String entity,
+			@Context HttpServletRequest httpRequest) {
+		JsonObject requestData = new JsonObject();
+		ResponseHandler jrh = new ResponseHandler();
+		try (SvReader svr = new SvReader(sessionId)) {
+			try {
+				requestData = gson.fromJson(entity, JsonObject.class);
+			} catch (JsonSyntaxException e) {
+				jrh.create(MessageType.ERROR, I18n.getText("error.bad_json"), CC.EMPTY_STRING);
+				return Response.status(400).entity(jrh.getAll().toString()).build();
+			}
+
+			String jobTypeLabelCode = null;
+			if (requestData.has("jobTypeLabelCode")) {
+				jobTypeLabelCode = requestData.get("jobTypeLabelCode").getAsString();
+			}
+
+			String jobTemplateLabelCode = null;
+			if (requestData.has("jobTemplateLabelCode")) {
+				jobTemplateLabelCode = requestData.get("jobTemplateLabelCode").getAsString();
+			}
+
+			DbDataArray jobs = null;
+			if (jobTypeLabelCode != null) {
+				DbDataObject jobTypeDbo = svr.getObjectByUnqConfId(jobTypeLabelCode, CC.SVAROG_BATCH_JOB_TYPE);
+				Long jobTypeId = jobTypeDbo.getObjectId();
+				jobs = svr.getObjectsByParentId(jobTypeId, svCONST.OBJECT_TYPE_BATCH_JOB, null, 0, 0);
+			}
+
+			if (jobTemplateLabelCode != null && jobs != null) {
+				DbDataObject jobTemplateObj = svr.getObjectByUnqConfId(jobTemplateLabelCode,
+						CC.SVAROG_BATCH_JOB_TEMPLATE);
+				Long templateId = jobTemplateObj.getObjectId();
+
+				jobs.setItems(new ArrayList<>(jobs.getItems().stream()
+						.filter(job -> templateId.equals(job.getAsLong(CC.TEMPLATE_ID))).collect(Collectors.toList())));
+			}
+
+			JsonArray jobsArray = HelperMethods.prepareDataArray(jobs);
+			return Response.status(200).entity(jobsArray.toString()).build();
+		} catch (Exception e) {
+			return PerunUtil.handleException(e, jrh, "batch.error.search");
 		}
 	}
 }
