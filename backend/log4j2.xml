@@ -21,8 +21,8 @@
     </Console> 
   </Appenders> 
   <Loggers> 
-    <Logger name="com.prtech.svarog" level="INFO" />
-    <Root level="INFO"> 
+    <Logger name="com.prtech.svarog" level="TRACE" />
+    <Root level="TRACE"> 
       <AppenderRef ref="STDOUT" /> 
     </Root> 
   </Loggers> 

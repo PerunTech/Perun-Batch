@@ -4,7 +4,7 @@
 
 	<groupId>org.peruntech</groupId>
 	<artifactId>perun-batch</artifactId>
-	<version>4.0.0</version>
+	<version>4.0.2</version>
 	<packaging>bundle</packaging>
 	<name>perun-batch</name>
 	<url>http://maven.apache.org</url>
@@ -41,15 +41,15 @@
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.5.1</version>
 				<configuration>
-					<source>1.7</source>
-					<target>1.7</target>
+					<source>11</source>
+					<target>11</target>
 				</configuration>
 			</plugin>
 			<!-- From here is the bundle configuration for the OSGI container -->
 			<plugin>
 				<groupId>org.apache.felix</groupId>
 				<artifactId>maven-bundle-plugin</artifactId>
-				<version>1.4.0</version>
+				<version>4.2.0</version>
 				<extensions>true</extensions>
 				<configuration>
 					<instructions>
@@ -79,12 +79,7 @@
 		</plugins>
 	</build>
 	<dependencies>
-		<dependency>
-			<groupId>org.apache.felix</groupId>
-			<artifactId>org.osgi.core</artifactId>
-			<version>1.0.0</version>
-			<scope>provided</scope>
-		</dependency>
+
 		<!-- https://mvnrepository.com/artifact/org.osgi/org.osgi.service.http -->
 		<dependency>
 			<groupId>org.osgi</groupId>
@@ -93,31 +88,26 @@
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
-			<groupId>junit</groupId>
-			<artifactId>junit</artifactId>
-			<version>4.12</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>svarog</groupId>
+			<groupId>org.peruntech</groupId>
 			<artifactId>svarog-batch</artifactId>
-			<version>[0.0.7,)</version>
+			<version>[4.0.0-SNAPSHOT,5.0.0)</version>
 			<scope>provided</scope>
 		</dependency>
 		<!-- https://mvnrepository.com/artifact/javax.ws.rs/jsr311-api -->
-	    <dependency>
-			<groupId>svarog</groupId>
+	
+		<dependency>
+			<groupId>org.peruntech</groupId>
 			<artifactId>svarog</artifactId>
-			<version>[3.2.6,3.2.99]</version>
+			<version>[4.0.0,5.0.0)</version>
 			<scope>provided</scope>
 		</dependency>
-		<dependency>
-			<groupId>com.oracle</groupId>
-			<artifactId>ojdbc8</artifactId>
-			<version>12.2.0.1.0</version>
-		</dependency>
 		<!-- https://mvnrepository.com/artifact/org.glassfish.jersey.media/jersey-media-multipart -->
-		<!-- https://mvnrepository.com/artifact/org.glassfish.jersey.core/jersey-server -->
+		<dependency>
+			<groupId>javax.servlet</groupId>
+			<artifactId>servlet-api</artifactId>
+			<version>2.4</version>
+			<scope>provided</scope>
+		</dependency>
 		<dependency>
 			<groupId>org.glassfish.jersey.core</groupId>
 			<artifactId>jersey-server</artifactId>
@@ -129,17 +119,18 @@
 			<version>2.22</version>
 			<scope>provided</scope>
 		</dependency>
-		<dependency>
-			<groupId>javax.servlet</groupId>
-			<artifactId>servlet-api</artifactId>
-			<version>2.4</version>
-			<scope>provided</scope>
-		</dependency>
-		<!-- https://mvnrepository.com/artifact/com.sun.mail/javax.mail -->
+
+
+	
 		<dependency>
 			<groupId>javax.mail</groupId>
 			<artifactId>mail</artifactId>
 			<version>1.4</version>
+		</dependency>
+		<dependency>
+			<groupId>org.peruntech</groupId>
+			<artifactId>perun-core-services</artifactId>
+			<version>[4.0.0-SNAPSHOT,5.0.0)</version>
 		</dependency>
 	</dependencies>
 </project>

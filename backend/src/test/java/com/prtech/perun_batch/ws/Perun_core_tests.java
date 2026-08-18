@@ -1,24 +1,16 @@
-package com.prtech.perun.ws;
+package com.prtech.perun_batch.ws;
 
 import static org.junit.Assert.fail;
 
 import java.util.ArrayList;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.Form;
-import javax.ws.rs.core.MultivaluedHashMap;
-import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 
 import org.joda.time.DateTime;
 import org.junit.Test;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.prtech.perun_core.ws.WsConf;
-import com.prtech.perun_core.ws.WsReactElements;
-import com.prtech.perun_core.ws.WsSecurityActions;
+import com.prtech.perun.services.ws.WsConf;
+import com.prtech.perun.services.ws.WsReactElements;
 import com.prtech.svarog.SvConf;
 import com.prtech.svarog.SvCore;
 import com.prtech.svarog.SvException;
@@ -31,8 +23,8 @@ import com.prtech.svarog.svCONST;
 import com.prtech.svarog_common.DbDataArray;
 import com.prtech.svarog_common.DbDataObject;
 import com.prtech.svarog_common.DbSearchCriterion;
-import com.prtech.svarog_common.DbSearchExpression;
 import com.prtech.svarog_common.DbSearchCriterion.DbCompareOperand;
+import com.prtech.svarog_common.DbSearchExpression;
 
 public class Perun_core_tests {
 	@Test
@@ -42,14 +34,14 @@ public class Perun_core_tests {
 		try {
 			svc = new SvSecurity();
 			String sessionId = svc.logon("ADMIN", SvUtil.getMD5("welcome"));
-			//wsc.saveFormWizard(sessionId, "FILIP_TEST", "VFARMER", 1, null, null);
+			// wsc.saveFormWizard(sessionId, "FILIP_TEST", "VFARMER", 1, null, null);
 			System.out.print("finish");
 		} catch (SvException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
-	
+
 	@Test
 	public void assigneUserToGroup() {
 		SvSecurity svc;
@@ -67,7 +59,7 @@ public class Perun_core_tests {
 			e.printStackTrace();
 		}
 	}
-	
+
 	@Test
 	public void getTableJSONSchema() {
 		WsReactElements wsc = new WsReactElements();
@@ -76,60 +68,6 @@ public class Perun_core_tests {
 			svc = new SvSecurity();
 			String sessionId = svc.logon("ADMIN", SvUtil.getMD5("welcome"));
 			Response test = wsc.getTableJSONSchema(sessionId, "LAND_USE_PLAN", null);
-			System.out.print(test);
-		} catch (SvException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
-	}
-	
-	@Test
-	public void changePass() {
-		WsSecurityActions wsc = new WsSecurityActions();
-			Response test = wsc.changePassword("ADMIN", "2211221122112", "WELCOME", "WELCOME", null);
-			System.out.print(test);
-		}
-
-//	@Test
-//	public void getModule() {
-//		WsSecurityActions wsa = new WsSecurityActions();
-//		SvSecurity svc;
-//		try {
-//			svc = new SvSecurity();
-//			String sessionId = svc.logon("ADMIN", SvUtil.getMD5("welcome"));
-//			Response test = wsa.getCofnigModules(sessionId);
-//		} catch (SvException e) {
-//			e.printStackTrace();
-//		}
-//
-//	}
-
-	// @Test
-	// public void sendActivationMail() {
-	// WsSecurityActions wsa = new WsSecurityActions();
-	// MultivaluedMap<String, String> formVals = new MultivaluedHashMap<>();
-	// try {
-	//
-	// formVals.add("username", "00000258550");
-	// formVals.add("password", SvUtil.getMD5("welcome"));
-	// formVals.add("idNo", "1604957450101");
-	// Response test = wsa.sendActivationLink(formVals, httpRequest);
-	// System.out.print(test);
-	// } catch (SvException e) {
-	// // TODO Auto-generated catch block
-	// e.printStackTrace();
-	// }
-	// }
-
-	@Test
-	public void getUserGroups() {
-		WsSecurityActions wsa = new WsSecurityActions();
-		SvSecurity svc;
-		try {
-			svc = new SvSecurity();
-			String sessionId = svc.logon("00000258550", SvUtil.getMD5("welcome"));
-			JsonObject test = wsa.getCofnigModules(sessionId);
 			System.out.print(test);
 		} catch (SvException e) {
 			// TODO Auto-generated catch block

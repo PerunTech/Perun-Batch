@@ -8,10 +8,12 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
+import javax.ws.rs.HeaderParam;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -32,12 +34,14 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonSyntaxException;
+import com.prtech.perun.PerunUtil;
 import com.prtech.svarog.I18n;
 import com.prtech.svarog.SvConf;
 import com.prtech.svarog.SvException;
 import com.prtech.svarog.SvFileStore;
-import com.prtech.svarog.SvNote;
 import com.prtech.svarog.SvLock;
+import com.prtech.svarog.SvNote;
 import com.prtech.svarog.SvReader;
 import com.prtech.svarog.SvWriter;
 import com.prtech.svarog.svCONST;
@@ -54,6 +58,7 @@ import com.prtech.svarog_common.ResponseHandler.MessageType;
 @Path("/SvBatch")
 public class WsSvBatch {
 	static final Logger log4j = SvConf.getLogger(WsSvBatch.class);
+	static final Gson gson = new Gson();
 
 	@Path("/getBatchJobTypes/{token}")
 	@GET
@@ -270,7 +275,7 @@ public class WsSvBatch {
 		String jsonObjString = "";
 		ReentrantLock lock = null;
 		String LOCK_KEY = "";
-		try 	(SvWriter svw = new SvWriter(token);) {
+		try (SvWriter svw = new SvWriter(token);) {
 			if (formVals != null)
 				for (Entry<String, List<String>> entry : formVals.entrySet()) {
 					if (entry.getKey() != null && !entry.getKey().isEmpty()) {
@@ -284,14 +289,14 @@ public class WsSvBatch {
 			jsonData = gson.fromJson(jsonObjString, JsonObject.class);
 			if (jsonData.has("name")) {
 				jobName = jsonData.get("name").getAsString();
-				LOCK_KEY+=jobName;
+				LOCK_KEY += jobName;
 			}
 			if (jsonData.has("jobTypeId")) {
 				jobTyprId = jsonData.get("jobTypeId").getAsLong();
 			}
 			if (jsonData.has("note")) {
 				note = jsonData.get("note").getAsString();
-				LOCK_KEY+=("-"+note);
+				LOCK_KEY += ("-" + note);
 			}
 			if (jsonData.has("numOfThread")) {
 				numOfThread = jsonData.get("numOfThread").getAsLong();
@@ -310,7 +315,7 @@ public class WsSvBatch {
 
 				jrh.create(MessageType.SUCCESS, I18n.getText("batch.success.create_job"),
 						I18n.getText("batch.success.create_job"), jo);
-			}else {
+			} else {
 				jrh.create(MessageType.WARNING, I18n.getText("batch.warning.job_already_created"),
 						I18n.getText("batch.warning.job_already_created"), new JsonObject());
 			}
@@ -351,7 +356,9 @@ public class WsSvBatch {
 		DbSearchExpression dbexp = null;
 		DbDataArray ret = null;
 		DbDataObject dbJob = null;
-		try (SvReader svr = new SvReader(token);SvWriter svw = new SvWriter(svr);SvFileStore svfs = new SvFileStore(svr);) {
+		try (SvReader svr = new SvReader(token);
+				SvWriter svw = new SvWriter(svr);
+				SvFileStore svfs = new SvFileStore(svr);) {
 
 			DbDataObject fileDescriptor = null;
 			JsonArray jArry = new JsonArray();
@@ -392,8 +399,8 @@ public class WsSvBatch {
 					}
 				}
 			}
-			
-			if(!jsonObjString.equals("")){
+
+			if (!jsonObjString.equals("")) {
 				JsonObject jsonData = null;
 				Gson gson = new Gson();
 				jsonData = gson.fromJson(jsonObjString, JsonObject.class);
@@ -428,16 +435,15 @@ public class WsSvBatch {
 
 					jArryParams.add(jObj);
 				}
-				DbDataArray arrJobParam = svr.getObjectsByParentId(jobId, svCONST.OBJECT_TYPE_BATCH_JOB_PARAM,
-						null, 0, 0);
+				DbDataArray arrJobParam = svr.getObjectsByParentId(jobId, svCONST.OBJECT_TYPE_BATCH_JOB_PARAM, null, 0,
+						0);
 
 				DbDataObject dbJobParam = null;
 				if (!arrJobParam.getItems().isEmpty()) {
 					dbJobParam = arrJobParam.get(0);
 				}
 				templateParams = new Gson().toJson(jArryParams);
-				DbDataObject dbBatchJobParam = SvarogBatchManager.createJobParam(dbJobParam, jobId,
-						templateParams);
+				DbDataObject dbBatchJobParam = SvarogBatchManager.createJobParam(dbJobParam, jobId, templateParams);
 
 				svw.saveObject(dbBatchJobParam, false);
 			}
@@ -466,59 +472,72 @@ public class WsSvBatch {
 
 			jrh.create(MessageType.ERROR, I18n.getText("batch.error.create_job_param"),
 					I18n.getText("batch.error.create_job_param"), new JsonObject());
-		} 
+		}
 		return Response.status(200).entity(jrh.getAll().toString()).build();
 	}
 
 	@Path("/runBatchJob/{token}")
 	@POST
 	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
-	@Produces("application/json")
+	@Produces(MediaType.APPLICATION_JSON)
 	public Response runBatchJob(@PathParam("token") String token, MultivaluedMap<String, String> formVals,
 			@Context HttpServletRequest httpRequest) {
-		ResponseHandler jrh = new ResponseHandler();
-		String jsonObjString = "";
-		Long jobId = null;
 		try {
-			if (formVals != null)
+			String jsonObjString = "";
+
+			if (formVals != null) {
 				for (Entry<String, List<String>> entry : formVals.entrySet()) {
 					if (entry.getKey() != null && !entry.getKey().isEmpty()) {
 						String key = entry.getKey();
 						jsonObjString = key;
 					}
 				}
-
-			JsonObject jsonData = null;
-			Gson gson = new Gson();
-			jsonData = gson.fromJson(jsonObjString, JsonObject.class);
-
-			if (jsonData.has("jobId")) {
-				jobId = jsonData.get("jobId").getAsLong();
 			}
-			if (jobId != null) {
-				SvarogBatchManager sbm = new SvarogBatchManager();
-				sbm.runJob(jobId, token);
 
-				jrh.create(MessageType.SUCCESS, I18n.getText("batch.success.running_job"),
-						I18n.getText("batch.success.running_job"), new JsonObject());
-			} else {
-				jrh.create(MessageType.ERROR, I18n.getText("batch.error.not_found_jobId"),
-						I18n.getText("batch.error.not_found_jobId"), new JsonObject());
-			}
+			JsonObject jsonData = gson.fromJson(jsonObjString, JsonObject.class);
+			return executeRunBatchJob(jsonData, token);
 		} catch (Exception e) {
-			if (e instanceof SvException) {
-				SvException e1 = (SvException) e;
-				if (e1.getLabelCode().equals("error.invalid_session")) {
-					log4j.error(e1.getFormattedMessage());
-					jrh.create(MessageType.ERROR, I18n.getText("error.invalid_session"),
-							I18n.getText("error.invalid_session"), new JsonObject());
-					return Response.status(401).entity(jrh.getAll().toString()).build();
-				}
-			}
 			log4j.error(e.getMessage(), e);
-			jrh.create(MessageType.ERROR, I18n.getText("batch.error.running_job"),
-					I18n.getText("batch.error.running_job"), new JsonObject());
+			return PerunUtil.handleException(e, "batch.error.select_objects");
 		}
+	}
+
+	@Path("/runBatchJob/{token}")
+	@POST
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public Response runBatchJob(@PathParam("token") String token, String entity,
+			@Context HttpServletRequest httpRequest) {
+		try {
+			JsonObject jsonData = gson.fromJson(entity, JsonObject.class);
+			return executeRunBatchJob(jsonData, token);
+		} catch (Exception e) {
+			log4j.error(e.getMessage(), e);
+			return PerunUtil.handleException(e, "batch.error.select_objects");
+		}
+	}
+
+	private Response executeRunBatchJob(JsonObject jsonData, String token) throws SvException {
+		ResponseHandler jrh = new ResponseHandler();
+
+		if (jsonData == null) {
+			jrh.create(MessageType.ERROR, I18n.getText("batch.error.not_found_jobId"),
+					I18n.getText("batch.error.not_found_jobId"), new JsonObject());
+			return Response.status(400).entity(jrh.getAll().toString()).build();
+		}
+
+		Long jobId = jsonData.has("jobId") ? jsonData.get("jobId").getAsLong() : null;
+
+		if (jobId != null) {
+			SvarogBatchManager sbm = new SvarogBatchManager();
+			sbm.runJob(jobId, token);
+			jrh.create(MessageType.SUCCESS, I18n.getText("batch.success.running_job"),
+					I18n.getText("batch.success.running_job"), new JsonObject());
+		} else {
+			jrh.create(MessageType.ERROR, I18n.getText("batch.error.not_found_jobId"),
+					I18n.getText("batch.error.not_found_jobId"), new JsonObject());
+		}
+
 		return Response.status(200).entity(jrh.getAll().toString()).build();
 	}
 
@@ -576,6 +595,46 @@ public class WsSvBatch {
 		return Response.status(200).entity(jrh.getAll().toString()).build();
 	}
 
+	@Path("/selectObjects/{token}/trigger")
+	@POST
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public Response selectObjectsTrigger(@PathParam("token") String token, String entity,
+			@Context HttpServletRequest httpRequest) {
+		ResponseHandler jrh = new ResponseHandler();
+		JsonObject requestData = new JsonObject();
+		Long jobId = null;
+		try {
+			try {
+				requestData = new Gson().fromJson(entity, JsonObject.class);
+			} catch (JsonSyntaxException e) {
+				jrh.create(MessageType.ERROR, I18n.getText("error.bad_json"), CC.EMPTY_STRING);
+				return Response.status(400).entity(jrh.getAll().toString()).build();
+			}
+			if (requestData.has("jobId")) {
+				jobId = requestData.get("jobId").getAsLong();
+			}
+
+			if (jobId == null) {
+				jrh.create(MessageType.ERROR, I18n.getText("batch.error.not_found_jobId"), CC.EMPTY_STRING);
+				return Response.status(400).entity(jrh.getAll().toString()).build();
+			}
+
+			SvarogBatchManager sbm = new SvarogBatchManager();
+			sbm.selectObjectsTrigger(jobId, token);
+			JsonObject responseJson = new JsonObject();
+			responseJson.addProperty("jobId", jobId);
+
+			jrh.create(MessageType.SUCCESS, I18n.getText("batch.success.select_objects_triggered"), CC.EMPTY_STRING,
+					responseJson);
+
+			return Response.status(202).entity(jrh.getAll().toString()).build();
+		} catch (Exception e) {
+			log4j.error(e.getMessage(), e);
+			return PerunUtil.handleException(e, "batch.error.select_objects");
+		}
+	}
+
 	@Path("/stopBatchJob")
 	@POST
 	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
@@ -629,7 +688,7 @@ public class WsSvBatch {
 	@GET
 	@Produces("application/json")
 	public Response getProcessForm(@PathParam("token") String token, @Context HttpServletRequest httpRequest) {
-		try 	(SvReader svr = new SvReader(token);) {
+		try (SvReader svr = new SvReader(token);) {
 			JsonArray jArray = new JsonArray();
 			JsonObject jObj = new JsonObject();
 			JsonObject jObj2 = new JsonObject();
@@ -669,7 +728,7 @@ public class WsSvBatch {
 						I18n.getText("batch.error.getProcessForm"), new JsonObject());
 				return Response.status(200).entity(jrh.getAll().toString()).build();
 			}
-		} 
+		}
 	}
 
 	@Path("/reRunBatchJob/{token}")
@@ -730,7 +789,7 @@ public class WsSvBatch {
 	public Response getFile(@PathParam("token") String token, @PathParam("jobId") Long jobId) {
 		String filePath = "";
 		ResponseHandler jrh = new ResponseHandler();
-		try (SvReader svr = new SvReader(token);){
+		try (SvReader svr = new SvReader(token);) {
 			ArrayList<DbDataObject> jobHistory = svr
 					.getObjectsHistory(new DbSearchCriterion("OBJECT_ID", DbCompareOperand.EQUAL, jobId),
 							SvReader.getTypeIdByName("SVAROG_BATCH_JOB"), 0, 0)
@@ -793,14 +852,14 @@ public class WsSvBatch {
 					I18n.getText("batch.error.get_reports"), new JsonObject());
 
 			return Response.status(200).entity(jrh.getAll().toString()).build();
-		} 
+		}
 	}
 
 	@Path("/getActions/{token}/{jobId}")
 	@GET
 	@Produces("text/html;charset=utf-8")
 	public Response getActions(@PathParam("token") String token, @PathParam("jobId") Long jobId) {
-		try (SvReader svr = new SvReader(token);){
+		try (SvReader svr = new SvReader(token);) {
 			DbDataObject job = svr.getObjectById(jobId, svCONST.OBJECT_TYPE_BATCH_JOB, null);
 			JsonArray jArray = new JsonArray();
 			if (job.getStatus().equals("FINISHED")) {
@@ -828,7 +887,7 @@ public class WsSvBatch {
 					I18n.getText("batch.error.get_actions"), new JsonObject());
 
 			return Response.status(200).entity(jrh.getAll().toString()).build();
-		} 
+		}
 	}
 
 	@Path("/getBatchJobParam/{token}/{batchJobId}")
@@ -837,25 +896,26 @@ public class WsSvBatch {
 	public Response getBatchJobParam(@PathParam("token") String token, @PathParam("batchJobId") Long batchJobId) {
 		ResponseHandler jrh = new ResponseHandler();
 		JsonArray jArry = new JsonArray();
-		try (SvReader svr = new SvReader(token)){
-			DbDataArray params = svr.getObjectsByParentId(batchJobId, SvReader.getTypeIdByName("SVAROG_BATCH_JOB_PARAM"), null);
-			if (null==params || params.size()==0){
+		try (SvReader svr = new SvReader(token)) {
+			DbDataArray params = svr.getObjectsByParentId(batchJobId,
+					SvReader.getTypeIdByName("SVAROG_BATCH_JOB_PARAM"), null);
+			if (null == params || params.size() == 0) {
 				jrh.create(MessageType.ERROR, I18n.getText("batch.not_found_params"),
 						I18n.getText("batch.not_found_params"), new JsonObject());
-			}else{
-			DbDataObject param = params.get(0);
-			if (param != null) {
-				if (param.getVal("PARAMS_VALUE") != null) {
-					jArry = new Gson().fromJson((String) param.getVal("PARAMS_VALUE"), JsonArray.class);
-				}
-				jrh.create(MessageType.SUCCESS, I18n.getText("batch.success.get_job_params"),
-						I18n.getText("batch.success.get_job_params"), jArry);
 			} else {
-				jrh.create(MessageType.ERROR, I18n.getText("batch.not_found_params"),
-						I18n.getText("batch.not_found_params"), new JsonObject());
+				DbDataObject param = params.get(0);
+				if (param != null) {
+					if (param.getVal("PARAMS_VALUE") != null) {
+						jArry = new Gson().fromJson((String) param.getVal("PARAMS_VALUE"), JsonArray.class);
+					}
+					jrh.create(MessageType.SUCCESS, I18n.getText("batch.success.get_job_params"),
+							I18n.getText("batch.success.get_job_params"), jArry);
+				} else {
+					jrh.create(MessageType.ERROR, I18n.getText("batch.not_found_params"),
+							I18n.getText("batch.not_found_params"), new JsonObject());
+				}
 			}
-			}
-			return Response.status(200).entity(jArry.toString()).build();			
+			return Response.status(200).entity(jArry.toString()).build();
 		} catch (SvException e) {
 			jrh = new ResponseHandler();
 			if (e.getLabelCode().equals("error.invalid_session")) {
@@ -873,4 +933,228 @@ public class WsSvBatch {
 		}
 	}
 
+	@Path("/create-batch-job/{sessionId}")
+	@POST
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public Response createBatchJob(@PathParam("sessionId") String sessionId, String entity,
+			@Context HttpServletRequest httpRequest) {
+		ResponseHandler jrh = new ResponseHandler();
+		JsonObject requestData = new JsonObject();
+		String jobName = "";
+		String note = "";
+		Long numOfThread = null;
+		String jobTypeLabelCode = null;
+		String jobTemplateLabelCode = null;
+		ReentrantLock lock = null;
+		String LOCK_KEY = "";
+		DbDataObject jobTypeDbo = null;
+		DbDataObject jobTemplateDbo = null;
+		try (SvReader svr = new SvReader(sessionId); SvWriter svw = new SvWriter(svr)) {
+			try {
+				requestData = new Gson().fromJson(entity, JsonObject.class);
+			} catch (Exception e) {
+				throw new SvException("error.bad_json", svr.getInstanceUser());
+			}
+
+			if (requestData.has("name")) {
+				jobName = requestData.get("name").getAsString();
+				LOCK_KEY += jobName;
+			}
+			if (requestData.has("jobTypeLabelCode")) {
+				jobTypeLabelCode = requestData.get("jobTypeLabelCode").getAsString();
+			}
+			if (requestData.has("note")) {
+				note = requestData.get("note").getAsString();
+				LOCK_KEY += ("-" + note);
+			}
+			if (requestData.has("numOfThread")) {
+				numOfThread = requestData.get("numOfThread").getAsLong();
+			}
+			if (requestData.has("jobTemplateLabelCode")) {
+				jobTemplateLabelCode = requestData.get("jobTemplateLabelCode").getAsString();
+			}
+
+			jobTypeDbo = svr.getObjectByUnqConfId(jobTypeLabelCode, CC.SVAROG_BATCH_JOB_TYPE);
+			if (jobTypeDbo == null) {
+				throw new SvException("batch.error.job_type_not_found", svr.getInstanceUser());
+			}
+
+			jobTemplateDbo = svr.getObjectByUnqConfId(jobTemplateLabelCode, CC.SVAROG_BATCH_JOB_TEMPLATE);
+			if (jobTemplateDbo == null) {
+				throw new SvException("batch.error.job_template_not_found", svr.getInstanceUser());
+			}
+
+			lock = SvLock.getLock(LOCK_KEY, false, 0);
+			if (lock != null) {
+				DbDataObject dbBatchJob = SvarogBatchManager.createJob(jobName, jobTypeDbo.getObjectId(), note,
+						numOfThread, jobTemplateDbo.getObjectId());
+
+				svw.saveObject(dbBatchJob);
+				JsonObject resultObj = new JsonObject();
+				resultObj.addProperty("jobId", dbBatchJob.getObjectId());
+
+				jrh.create(MessageType.SUCCESS, I18n.getText("batch.success.create_job"), null, resultObj);
+			} else {
+				jrh.create(MessageType.WARNING, I18n.getText("batch.warning.job_already_created"), null,
+						new JsonObject());
+			}
+			return Response.ok().entity(jrh.getAll().toString()).build();
+		} catch (Exception e) {
+			return PerunUtil.handleException(e, jrh, "Failed to create batch job");
+		} finally {
+			if (lock != null) {
+				SvLock.releaseLock(LOCK_KEY, lock);
+			}
+		}
+	}
+
+	@Path("/save-job-params/{jobObjId}")
+	@POST
+	@Consumes(MediaType.MULTIPART_FORM_DATA)
+	@Produces(MediaType.APPLICATION_JSON)
+	public Response saveJobParams(@HeaderParam("sessionId") String sessionId, @PathParam("jobObjId") Long jobObjId,
+			FormDataMultiPart multipart, @Context HttpServletRequest httpRequest) {
+		ResponseHandler jrh = new ResponseHandler();
+		try (SvReader svr = new SvReader(sessionId);
+				SvWriter svw = new SvWriter(svr);
+				SvFileStore svfs = new SvFileStore(svr)) {
+
+			if (jobObjId == null) {
+				throw new SvException("batch.error.missing_job_id", svr.getInstanceUser());
+			}
+
+			FormDataBodyPart filePart = multipart.getField("file");
+			byte[] fileBytes = null;
+			String fileName = "";
+			String contentType = "";
+
+			if (filePart != null) {
+				fileBytes = IOUtils.toByteArray(filePart.getValueAs(InputStream.class));
+				fileName = filePart.getFormDataContentDisposition().getFileName();
+				contentType = filePart.getMediaType().toString();
+
+				DbSearch fileNameSearch = new DbSearchCriterion("FILE_NAME", DbCompareOperand.EQUAL, fileName);
+				DbSearch fileTypeSearch = new DbSearchCriterion("FILE_TYPE", DbCompareOperand.EQUAL, "ATTACHMENT");
+				DbSearchExpression fileSearchExpr = new DbSearchExpression().addDbSearchItem(fileNameSearch)
+						.addDbSearchItem(fileTypeSearch);
+				DbDataArray existingFiles = svr.getObjects(fileSearchExpr, svCONST.OBJECT_TYPE_FILE, null, 0, 0);
+
+				if (existingFiles != null && !existingFiles.getItems().isEmpty()) {
+					throw new SvException("batch.error.file_already_exist", svr.getInstanceUser());
+				}
+			}
+
+			DbDataObject dbJob = svr.getObjectById(jobObjId, svCONST.OBJECT_TYPE_BATCH_JOB, null);
+			if (dbJob == null) {
+				throw new SvException("batch.error.job_not_found", svr.getInstanceUser());
+			}
+
+			DbDataObject dbTemplate = svr.getObjectById((Long) dbJob.getVal(CC.TEMPLATE_ID),
+					svCONST.OBJECT_TYPE_BATCH_JOB_TEMPLATE, null);
+			if (dbTemplate == null) {
+				throw new SvException("batch.error.job_template_not_found", svr.getInstanceUser());
+			}
+
+			JsonArray templateParams = dbTemplate.getVal(CC.PARAMS) != null
+					? new Gson().fromJson(dbTemplate.getAsString(CC.PARAMS), JsonArray.class)
+					: new JsonArray();
+
+			JsonArray resolvedParams = new JsonArray();
+			for (JsonElement paramEl : templateParams) {
+				JsonObject param = paramEl.getAsJsonObject().deepCopy();
+				String paramId = param.get("id").getAsString();
+				String paramType = param.get("type").getAsString();
+
+				if (paramType.equalsIgnoreCase("attachment")) {
+					param.addProperty("value", fileName);
+				} else {
+					FormDataBodyPart field = multipart.getField(paramId);
+					if (field != null) {
+						param.addProperty("value", field.getValue().trim());
+					}
+				}
+
+				resolvedParams.add(param);
+			}
+
+			DbDataArray existingJobParams = svr.getObjectsByParentId(jobObjId, svCONST.OBJECT_TYPE_BATCH_JOB_PARAM,
+					null, 0, 0);
+			DbDataObject existingJobParam = existingJobParams.getItems().isEmpty() ? null : existingJobParams.get(0);
+
+			DbDataObject dbBatchJobParam = SvarogBatchManager.createJobParam(existingJobParam, jobObjId,
+					new Gson().toJson(resolvedParams));
+			svw.saveObject(dbBatchJobParam, false);
+
+			if (fileBytes != null) {
+				DbDataObject fileDescriptor = new DbDataObject();
+				fileDescriptor.setObjectType(svCONST.OBJECT_TYPE_FILE);
+				fileDescriptor.setVal("file_size", fileBytes.length);
+				fileDescriptor.setVal("file_date", new DateTime());
+				fileDescriptor.setVal("file_name", fileName);
+				fileDescriptor.setVal("file_type", "ATTACHMENT");
+				fileDescriptor.setVal("content_type", contentType);
+				fileDescriptor.setVal("FILE_STORE_ID", svCONST.SYSTEM_FILESTORE_ID);
+				svfs.saveFile(fileDescriptor, dbJob, fileBytes, false);
+			}
+
+			svw.dbCommit();
+			svfs.dbCommit();
+
+			jrh.create(MessageType.SUCCESS, I18n.getText("batch.success.create_job_param"), null, new JsonObject());
+			return Response.ok(jrh.getAll().toString()).build();
+		} catch (Exception e) {
+			return PerunUtil.handleException(e, jrh, "batch.error.create_job_param");
+		}
+	}
+
+	@Path("/search")
+	@POST
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public Response search(@HeaderParam("sessionId") String sessionId, String entity,
+			@Context HttpServletRequest httpRequest) {
+		JsonObject requestData = new JsonObject();
+		ResponseHandler jrh = new ResponseHandler();
+		try (SvReader svr = new SvReader(sessionId)) {
+			try {
+				requestData = gson.fromJson(entity, JsonObject.class);
+			} catch (JsonSyntaxException e) {
+				jrh.create(MessageType.ERROR, I18n.getText("error.bad_json"), CC.EMPTY_STRING);
+				return Response.status(400).entity(jrh.getAll().toString()).build();
+			}
+
+			String jobTypeLabelCode = null;
+			if (requestData.has("jobTypeLabelCode")) {
+				jobTypeLabelCode = requestData.get("jobTypeLabelCode").getAsString();
+			}
+
+			String jobTemplateLabelCode = null;
+			if (requestData.has("jobTemplateLabelCode")) {
+				jobTemplateLabelCode = requestData.get("jobTemplateLabelCode").getAsString();
+			}
+
+			DbDataArray jobs = null;
+			if (jobTypeLabelCode != null) {
+				DbDataObject jobTypeDbo = svr.getObjectByUnqConfId(jobTypeLabelCode, CC.SVAROG_BATCH_JOB_TYPE);
+				Long jobTypeId = jobTypeDbo.getObjectId();
+				jobs = svr.getObjectsByParentId(jobTypeId, svCONST.OBJECT_TYPE_BATCH_JOB, null, 0, 0);
+			}
+
+			if (jobTemplateLabelCode != null && jobs != null) {
+				DbDataObject jobTemplateObj = svr.getObjectByUnqConfId(jobTemplateLabelCode,
+						CC.SVAROG_BATCH_JOB_TEMPLATE);
+				Long templateId = jobTemplateObj.getObjectId();
+
+				jobs.setItems(new ArrayList<>(jobs.getItems().stream()
+						.filter(job -> templateId.equals(job.getAsLong(CC.TEMPLATE_ID))).collect(Collectors.toList())));
+			}
+
+			JsonArray jobsArray = HelperMethods.prefixKeys(CC.SVAROG_BATCH_JOB + ".",
+					HelperMethods.prepareDataArray(jobs));
+			return Response.status(200).entity(jobsArray.toString()).build();
+		} catch (Exception e) {
+			return PerunUtil.handleException(e, jrh, "batch.error.search");
+		}
+	}
 }
