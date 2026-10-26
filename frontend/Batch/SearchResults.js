@@ -1,4 +1,4 @@
-import { React, PropTypes, connect, ExportableGrid, GridManager, ComponentManager } from 'perun-core'
+import { React, IntlContext, connect, ExportableGrid, GridManager, ComponentManager } from 'perun-core'
 
 class SearchResults extends React.Component {
   constructor(props) {
@@ -23,7 +23,7 @@ class SearchResults extends React.Component {
     const gridType = 'SVAROG_BATCH_JOB'
     const id = batch_type + templateId
     const gridId = gridType + '_' + id
-    const showParamsLabel = this.context.intl.formatMessage({ id: 'perun.batch.show_params', defaultMessage: 'perun.batch.show_params' })
+    const showParamsLabel = this.context.formatMessage({ id: 'perun.batch.show_params', defaultMessage: 'perun.batch.show_params' })
     GridManager.reloadGridData(gridId)
     const grid = (
       <ExportableGrid
@@ -67,8 +67,6 @@ const mapStateToProps = state => ({
   svSession: state.security.svSession
 })
 
-SearchResults.contextTypes = {
-  intl: PropTypes.object.isRequired
-}
+SearchResults.contextType = IntlContext
 
 export default connect(mapStateToProps)(SearchResults)
