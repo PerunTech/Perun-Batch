@@ -1,6 +1,5 @@
 import * as config from '../config/config'
 import SearchResults from './SearchResults'
-import queryString from 'query-string';
 import { React, connect, elements, axios, IntlContext, createHashHistory, ComponentManager, GridManager, Modal as CoreModal, Loading } from 'perun-core'
 import Statistics from '../Statistics/Statistics'
 import { iconManager } from '../assets/svgHolder'
@@ -92,7 +91,7 @@ class BatchWrapper extends React.Component {
 
   /* read url and execute appropriate actions */
   readUrlState(urlContent) {
-    let params = queryString.parse(urlContent)
+    let params = Object.fromEntries(new URLSearchParams(urlContent))
     if (params.batch_type) {
       this.getJobType(params.batch_type);
       if (params.templateId) {
